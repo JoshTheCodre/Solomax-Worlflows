@@ -63,6 +63,8 @@ export const getStatusColor = (status) => {
       return 'bg-green-500/10 text-green-500';
     case TASK_STATUS.REJECTED:
       return 'bg-red-500/10 text-red-500';
+    case 'due':
+      return 'bg-orange-500/10 text-orange-500';
     default:
       return 'bg-gray-500/10 text-gray-500';
   }
@@ -78,5 +80,28 @@ export const getPriorityColor = (priority) => {
       return 'bg-blue-500/10 text-blue-500';
     default:
       return 'bg-gray-500/10 text-gray-500';
+  }
+};
+
+export const getFormattedStatus = (status, isDue = false) => {
+  if (isDue && status !== TASK_STATUS.COMPLETED) {
+    return 'Due';
+  }
+  
+  switch (status) {
+    case TASK_STATUS.ACTIVE:
+      return 'Active';
+    case TASK_STATUS.IN_PROGRESS:
+      return 'In Progress';
+    case TASK_STATUS.PENDING_APPROVAL:
+      return 'Pending Review';
+    case TASK_STATUS.COMPLETED:
+      return 'Completed';
+    case TASK_STATUS.REJECTED:
+      return 'Rejected';
+    case 'due':
+      return 'Due';
+    default:
+      return 'Active';
   }
 };

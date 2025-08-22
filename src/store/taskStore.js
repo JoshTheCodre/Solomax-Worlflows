@@ -326,8 +326,8 @@ const useTaskStore = create((set, get) => ({
       filteredTasks = filteredTasks.filter(task => task.type === mergedFilters.type);
     }
 
-    // Filter for due soon tasks
-    if (mergedFilters.dueSoon) {
+    // Filter for due tasks
+    if (mergedFilters.due) {
       const now = new Date();
       filteredTasks = filteredTasks.filter(task => {
         if (!task.deadline) return false;
@@ -369,47 +369,83 @@ const useTaskStore = create((set, get) => ({
 
 // Helper function to sort tasks
 const sortTasks = (tasks, sortType) => {
-  console.log(`Sorting tasks by: ${sortType}`);
+  console.log(`Sorting ${tasks.length} tasks by: ${sortType}`);
+  // Debug output to show first few tasks before sorting
+  if (tasks.length > 0) {
+    console.log('First few tasks before sorting:', 
+      tasks.slice(0, 3).map(t => ({
+        id: t.id,
+        title: t.title,
+        createdAt: t.createdAt,
+        deadline: t.deadline,
+        priority: t.priority
+      }))
+    );
+  }
+  
+  let sortedTasks = [...tasks]; // Make a copy of tasks for sorting
+  
   switch (sortType) {
     case 'newest':
-      return [...tasks].sort((a, b) => {
+      sortedTasks = sortedTasks.sort((a, b) => {
         const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
         const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
         return dateB - dateA;
       });
+      break;
     
     case 'oldest':
-      return [...tasks].sort((a, b) => {
+      sortedTasks = sortedTasks.sort((a, b) => {
         const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
         const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
         return dateA - dateB;
       });
+      break;
       
     case 'priority':
       // Sort by priority: High > Medium > Low
       const priorityOrder = { 'high': 0, 'medium': 1, 'low': 2 };
-      return [...tasks].sort((a, b) => {
+      sortedTasks = sortedTasks.sort((a, b) => {
         return (priorityOrder[a.priority?.toLowerCase()] || 999) - 
                (priorityOrder[b.priority?.toLowerCase()] || 999);
       });
+      break;
       
     case 'deadline':
-      return [...tasks].sort((a, b) => {
+      sortedTasks = sortedTasks.sort((a, b) => {
         if (!a.deadline) return 1;
         if (!b.deadline) return -1;
         const dateA = a.deadline?.toDate?.() || new Date(a.deadline);
         const dateB = b.deadline?.toDate?.() || new Date(b.deadline);
         return dateA - dateB;
       });
+      break;
       
     case 'alphabetical':
-      return [...tasks].sort((a, b) => {
+      sortedTasks = sortedTasks.sort((a, b) => {
         return (a.title || '').localeCompare(b.title || '');
       });
+      break;
       
     default:
-      return tasks;
+      // No sorting needed
+      break;
   }
+  
+  // Log the first few sorted tasks
+  if (sortedTasks.length > 0) {
+    console.log('First few tasks after sorting:', 
+      sortedTasks.slice(0, 3).map(t => ({
+        id: t.id,
+        title: t.title,
+        createdAt: t.createdAt,
+        deadline: t.deadline,
+        priority: t.priority
+      }))
+    );
+  }
+  
+  return sortedTasks;
 };
 
 export default useTaskStore;

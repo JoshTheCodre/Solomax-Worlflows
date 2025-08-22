@@ -41,29 +41,41 @@ export default function Navbar() {
     if (pathname === '/admin/team') return 'Team Management';
     if (pathname === '/admin/media') return 'Media Library';
     if (pathname.includes('/tasks/')) return 'Task Details';
-    if (pathname === '/home') return 'My Workspace';
+    if (pathname === '/home') return 'Solomax'; // Changed from 'My Workspace'
     if (pathname === '/tasks') return 'My Tasks';
     if (pathname === '/media') return 'Media';
     if (pathname === '/team') return 'Team';
     return 'Dashboard';
   };
+  
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  };
 
   return (
     <nav className="border-b bg-white sticky top-0 z-50">
       <div className="flex h-16 items-center px-8">
-        <div>
-          <h1 className="text-xl font-bold text-black">{getPageTitle()}</h1>
-          {/* <p className="text-sm text-gray-500">
-            {isAdmin ? 'Admin Portal' : 'User Workspace'}
-          </p> */}
+        <div className="flex items-center gap-2">
+          <div>
+            <div className="flex items-center gap-1">
+              <h1 className="text-lg font-bold text-gray-900">{getTimeBasedGreeting()}</h1>
+              <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-md font-medium">v1.0</span>
+            </div>
+            <p className="text-xs text-gray-500">{getPageTitle()} {isAdmin ? '• Admin' : '• User'}</p>
+          </div>
         </div>
         <div className="ml-auto flex items-center space-x-4">
-          {/* Create Task Button */}
-          <AddTaskModal>
-            <Button size="sm" className="mr-2">
-              <Plus className="h-4 w-4 mr-1" /> New Task
-            </Button>
-          </AddTaskModal>
+          {/* Create Task Button - Only visible to admins */}
+          {isAdmin && (
+            <AddTaskModal>
+              <Button size="sm" className="mr-2">
+                <Plus className="h-4 w-4 mr-1" /> New Task
+              </Button>
+            </AddTaskModal>
+          )}
 
           {/* Notification Bell */}
           <NotificationBell />

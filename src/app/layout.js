@@ -33,8 +33,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <title>Taskr - Task Management System</title>
-        <meta name="description" content="A modern task management system" />
+        <title>Solomax • Enterprise Workflow Management</title>
+        <meta name="description" content="A comprehensive enterprise workflow management system for teams to collaborate, track, and manage projects efficiently" />
+        <meta name="keywords" content="workflow, tasks, project management, team collaboration, Solomax" />
+        <meta name="author" content="Solomax Studios" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <TaskNotificationsProvider>

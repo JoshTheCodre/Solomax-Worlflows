@@ -21,12 +21,13 @@ import {
   CheckCircle2, 
   User, 
   Calendar, 
+  Clock,
   Trash2,
   ArrowUpRightFromCircle,
   PenSquare
 } from 'lucide-react';
 
-import { TASK_STATUS, TASK_TYPES, TASK_PRIORITY, getStatusColor, getPriorityColor } from '@/lib/utils';
+import { TASK_STATUS, TASK_TYPES, TASK_PRIORITY, getStatusColor, getPriorityColor, getFormattedStatus } from '@/lib/utils';
 
 export function TasksTable({ data, onRowClick, onDeleteTask, onTransferTask, onUpdateTask, isAdmin = false }) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -60,20 +61,38 @@ export function TasksTable({ data, onRowClick, onDeleteTask, onTransferTask, onU
     }
 
     let deadline;
+    let isDue = false;
     try {
-      deadline = format(task.deadline.toDate(), 'MMM dd, yyyy');
+      const deadlineDate = task.deadline.toDate();
+      deadline = format(deadlineDate, 'MMM dd, yyyy');
+      
+      // Check if task is due (past deadline and not completed)
+      const now = new Date();
+      isDue = deadlineDate < now && task.status !== TASK_STATUS.COMPLETED;
     } catch (error) {
       deadline = 'No deadline';
     }
 
     const isCompleted = task.status === TASK_STATUS.COMPLETED;
-    const statusColor = getStatusColor(task.status || 'active');
+    const statusColor = getStatusColor(isDue ? 'due' : (task.status || 'active'));
     
     return (
       <div className="flex flex-col gap-3">
         <div className="flex items-center">
-          <div className="flex-1">
+          <div className="flex items-center gap-1.5">
             <span className="text-sm font-semibold text-gray-900">{task.title}</span>
+            <Badge className={`${getStatusColor(isDue ? 'due' : task.status)} text-xs px-2 py-0.5 ml-1.5 shadow-sm`}>
+              <div className="flex items-center gap-1">
+                {task.status === TASK_STATUS.COMPLETED ? (
+                  <CheckCircle2 className="w-3 h-3" />
+                ) : isDue ? (
+                  <Clock className="w-3 h-3" />
+                ) : (
+                  <CircleDot className="w-3 h-3" />
+                )}
+                <span>{getFormattedStatus(task.status, isDue)}</span>
+              </div>
+            </Badge>
           </div>
         </div>
         <div className="flex items-center text-sm gap-3">
@@ -199,11 +218,19 @@ export function TasksTable({ data, onRowClick, onDeleteTask, onTransferTask, onU
                         <div className="flex items-center gap-1.5">
                           {task.status === TASK_STATUS.COMPLETED ? (
                             <CheckCircle2 className="w-4 h-4" />
+                          ) : (task.deadline && new Date(task.deadline.toDate()) < new Date() && task.status !== TASK_STATUS.COMPLETED) ? (
+                            <Clock className="w-4 h-4 text-orange-500" />
                           ) : (
                             <CircleDot className="w-4 h-4" />
                           )}
-                          <Badge className={`${getStatusColor(task.status)} text-xs`}>
-                            {task.status || 'Active'}
+                          <Badge className={`${
+                            task.deadline && new Date(task.deadline.toDate()) < new Date() && task.status !== TASK_STATUS.COMPLETED 
+                              ? getStatusColor('due') 
+                              : getStatusColor(task.status)
+                          } text-xs`}>
+                            {task.deadline && new Date(task.deadline.toDate()) < new Date() && task.status !== TASK_STATUS.COMPLETED 
+                              ? 'Due' 
+                              : getFormattedStatus(task.status)}
                           </Badge>
                         </div>
                       </TableCell>

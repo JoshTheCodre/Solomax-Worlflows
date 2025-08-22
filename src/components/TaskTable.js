@@ -26,10 +26,11 @@ import {
   PenSquare,
   FileCheck,
   Search,
+  Clock,
   X
 } from 'lucide-react';
 
-import { TASK_STATUS, TASK_TYPES, TASK_PRIORITY, getStatusColor, getPriorityColor } from '@/lib/utils';
+import { TASK_STATUS, TASK_TYPES, TASK_PRIORITY, getStatusColor, getPriorityColor, getFormattedStatus } from '@/lib/utils';
 
 export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUpdateTask, onRequestReview, isAdmin = false }) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -56,32 +57,40 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
     }
 
     let deadline;
+    let isDue = false;
     try {
-      deadline = format(task.deadline.toDate(), 'MMM dd, yyyy');
+      const deadlineDate = task.deadline.toDate();
+      deadline = format(deadlineDate, 'MMM dd, yyyy');
+      
+      // Check if task is due (past deadline and not completed)
+      const now = new Date();
+      isDue = deadlineDate < now && task.status !== TASK_STATUS.COMPLETED;
     } catch (error) {
       deadline = 'No deadline';
     }
 
     const isCompleted = task.status === TASK_STATUS.COMPLETED;
-    const statusColor = getStatusColor(task.status || 'active');
+    const statusColor = getStatusColor(isDue ? 'due' : (task.status || 'active'));
     
     return (
       <div className="flex flex-col gap-3">
         {/* Task Name and Status Row */}
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
+        <div className="flex items-center">
+          <div className="flex items-center gap-1.5">
             <span className="text-sm font-semibold text-gray-900">{task.title}</span>
+            <Badge className={`${getStatusColor(isDue ? 'due' : task.status)} text-xs px-2 py-0.5 ml-1.5 shadow-sm`}>
+              <div className="flex items-center gap-1">
+                {task.status === TASK_STATUS.COMPLETED ? (
+                  <CheckCircle2 className="w-3 h-3" />
+                ) : isDue ? (
+                  <Clock className="w-3 h-3" />
+                ) : (
+                  <CircleDot className="w-3 h-3" />
+                )}
+                <span>{getFormattedStatus(task.status, isDue)}</span>
+              </div>
+            </Badge>
           </div>
-          <Badge className={`${getStatusColor(task.status)} text-xs px-2 py-1 shadow-sm`}>
-            <div className="flex items-center gap-1.5">
-              {task.status === TASK_STATUS.COMPLETED ? (
-                <CheckCircle2 className="w-3 h-3" />
-              ) : (
-                <CircleDot className="w-3 h-3" />
-              )}
-              <span>{task.status || 'Active'}</span>
-            </div>
-          </Badge>
         </div>
 
         {/* Assignment and Due Date Row */}
@@ -225,16 +234,18 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
             <Table className="min-w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="bg-gray-50/80 w-10 px-2">
-                    <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        checked={selectAll}
-                        onChange={toggleSelectAll}
-                      />
-                    </div>
-                  </TableHead>
+                  {isAdmin && (
+                    <TableHead className="bg-gray-50/80 w-10 px-2">
+                      <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          checked={selectAll}
+                          onChange={toggleSelectAll}
+                        />
+                      </div>
+                    </TableHead>
+                  )}
                   <TableHead className="bg-gray-50/80 pl-5 font-medium text-gray-600 text-xs uppercase tracking-wider py-6 min-w-[400px] px-6">
                     Summary
                   </TableHead>
@@ -269,19 +280,21 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
                       transition={{ delay: index * 0.05, duration: 0.3 }}
                       layout
                     >
-                      <TableCell className="w-10 px-2">
-                        <div 
-                          className="flex items-center justify-center" 
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <input
-                            type="checkbox"
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            checked={selectedTasks.includes(task.id)}
-                            onChange={(e) => toggleTaskSelection(e, task.id)}
-                          />
-                        </div>
-                      </TableCell>
+                      {isAdmin && (
+                        <TableCell className="w-10 px-2">
+                          <div 
+                            className="flex items-center justify-center" 
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              checked={selectedTasks.includes(task.id)}
+                              onChange={(e) => toggleTaskSelection(e, task.id)}
+                            />
+                          </div>
+                        </TableCell>
+                      )}
                       <TableCell className="min-w-[400px] px-6 py-6">
                         {renderTaskSummary(task)}
                       </TableCell>
@@ -340,7 +353,7 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
       </div>
 
       <div className="flex items-center justify-between mt-4">
-        {selectedTasks.length > 0 && (
+        {isAdmin && selectedTasks.length > 0 && (
           <div className="flex items-center gap-2">
             <Button
               variant="destructive"

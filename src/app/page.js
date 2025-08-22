@@ -35,10 +35,10 @@ export default function Home() {
       <Card className="w-[380px] rounded-2xl shadow-xl border border-gray-100 bg-white/80 backdrop-blur-md">
         <CardHeader>
           <CardTitle className="text-center text-2xl font-semibold mb-2 text-[#374151] tracking-tight">
-            Welcome to <span className="text-[#5c6bc0]">Solomax</span> Workspace
+            Welcome to <span className="text-[#5c6bc0]">Solomax-Workflows</span>
           </CardTitle>
           <CardDescription className="text-center text-[#6b7280] text-base font-normal">
-            Please sign in to continue to your dashboard.
+            Enterprise workflow management platform for seamless collaboration
           </CardDescription>
         </CardHeader>
         <CardContent>

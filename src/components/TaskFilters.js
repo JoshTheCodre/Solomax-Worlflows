@@ -86,6 +86,13 @@ export function TaskFilters({ hideSearch = false, compact = false, onFilterChang
       });
     }
     
+    if (filterCriteria.due) {
+      updatedFilters.push({
+        key: 'due',
+        label: 'Due tasks',
+      });
+    }
+    
     setActiveFilters(updatedFilters);
   }, [searchQuery, filterCriteria, user]);
   
@@ -152,6 +159,12 @@ export function TaskFilters({ hideSearch = false, compact = false, onFilterChang
     if (onFilterChangeRef.current) {
       onFilterChangeRef.current(newFilters);
     }
+  };
+  
+  // Handle sort order changes with logging
+  const handleSortOrderChange = (order) => {
+    console.log(`Changing sort order to: ${order}`);
+    setSortOrder(order);
   };
   
   return (
@@ -250,54 +263,72 @@ export function TaskFilters({ hideSearch = false, compact = false, onFilterChang
               <User className="h-4 w-4 mr-2" />
               Assigned to me
             </DropdownMenuItem>
+            
+            <DropdownMenuSeparator />
+            
+            {/* Special Filters */}
+            <DropdownMenuLabel className="text-xs font-normal text-gray-500 pt-1">Special Filters</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => setFilter('due', true)}>
+              <Clock className="h-4 w-4 mr-2 text-orange-500" />
+              Due Tasks
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         
         {/* Sort Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-10 gap-2">
+            <Button variant="outline" size="sm" className={`h-10 gap-2 ${sortOrder ? 'bg-blue-50 border-blue-200 text-blue-600' : ''}`}>
               <ArrowUpDown className="h-4 w-4" />
-              <span className={compact ? "hidden" : "hidden sm:inline"}>Sort</span>
+              <span className={compact ? "hidden" : "hidden sm:inline"}>
+                {sortOrder ? 
+                  `Sort: ${sortOrder.charAt(0).toUpperCase() + sortOrder.slice(1)}` : 
+                  "Sort"}
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Sort by</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
-              onClick={() => setSortOrder('newest')}
-              className={sortOrder === 'newest' ? 'bg-gray-100' : ''}
+              onClick={() => handleSortOrderChange('newest')}
+              className={sortOrder === 'newest' ? 'bg-blue-50 text-blue-700 font-medium' : ''}
             >
-              <Clock className="h-4 w-4 mr-2" />
+              <Clock className={`h-4 w-4 mr-2 ${sortOrder === 'newest' ? 'text-blue-500' : ''}`} />
               Newest first
+              {sortOrder === 'newest' && <span className="ml-2 text-blue-500">✓</span>}
             </DropdownMenuItem>
             <DropdownMenuItem 
-              onClick={() => setSortOrder('oldest')}
-              className={sortOrder === 'oldest' ? 'bg-gray-100' : ''}
+              onClick={() => handleSortOrderChange('oldest')}
+              className={sortOrder === 'oldest' ? 'bg-blue-50 text-blue-700 font-medium' : ''}
             >
-              <Clock className="h-4 w-4 mr-2" />
+              <Clock className={`h-4 w-4 mr-2 ${sortOrder === 'oldest' ? 'text-blue-500' : ''}`} />
               Oldest first
+              {sortOrder === 'oldest' && <span className="ml-2 text-blue-500">✓</span>}
             </DropdownMenuItem>
             <DropdownMenuItem 
-              onClick={() => setSortOrder('deadline')}
-              className={sortOrder === 'deadline' ? 'bg-gray-100' : ''}
+              onClick={() => handleSortOrderChange('deadline')}
+              className={sortOrder === 'deadline' ? 'bg-blue-50 text-blue-700 font-medium' : ''}
             >
-              <CalendarRange className="h-4 w-4 mr-2" />
+              <CalendarRange className={`h-4 w-4 mr-2 ${sortOrder === 'deadline' ? 'text-blue-500' : ''}`} />
               Due date
+              {sortOrder === 'deadline' && <span className="ml-2 text-blue-500">✓</span>}
             </DropdownMenuItem>
             <DropdownMenuItem 
-              onClick={() => setSortOrder('priority')}
-              className={sortOrder === 'priority' ? 'bg-gray-100' : ''}
+              onClick={() => handleSortOrderChange('priority')}
+              className={sortOrder === 'priority' ? 'bg-blue-50 text-blue-700 font-medium' : ''}
             >
-              <Star className="h-4 w-4 mr-2" />
+              <Star className={`h-4 w-4 mr-2 ${sortOrder === 'priority' ? 'text-blue-500' : ''}`} />
               Priority
+              {sortOrder === 'priority' && <span className="ml-2 text-blue-500">✓</span>}
             </DropdownMenuItem>
             <DropdownMenuItem 
-              onClick={() => setSortOrder('alphabetical')}
-              className={sortOrder === 'alphabetical' ? 'bg-gray-100' : ''}
+              onClick={() => handleSortOrderChange('alphabetical')}
+              className={sortOrder === 'alphabetical' ? 'bg-blue-50 text-blue-700 font-medium' : ''}
             >
-              <ArrowDown01 className="h-4 w-4 mr-2" />
+              <ArrowDown01 className={`h-4 w-4 mr-2 ${sortOrder === 'alphabetical' ? 'text-blue-500' : ''}`} />
               A-Z
+              {sortOrder === 'alphabetical' && <span className="ml-2 text-blue-500">✓</span>}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

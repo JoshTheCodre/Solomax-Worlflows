@@ -43,7 +43,8 @@ export default function AdminDashboard() {
     requestReview,
     loading,
     filterCriteria,
-    setFilterCriteria
+    setFilterCriteria,
+    sortOrder
   } = useTaskStore();
   
   const { user } = useAuthStore();
@@ -120,6 +121,7 @@ export default function AdminDashboard() {
   
   // Apply filters and calculate stats
   useEffect(() => {
+    // Update filtered tasks when tasks, filter criteria, or sort order changes
     setFilteredTasks(getFilteredTasks());
     
     // Calculate stats
@@ -148,7 +150,7 @@ export default function AdminDashboard() {
       review: pendingReviews.length,
       bin: tasksInBin.length
     });
-  }, [tasks, pendingReviews, tasksInBin, getFilteredTasks]);
+  }, [tasks, pendingReviews, tasksInBin, getFilteredTasks, filterCriteria, sortOrder]);
 
   const handleCreateTask = async (taskData) => {
     try {
@@ -279,7 +281,7 @@ export default function AdminDashboard() {
               
               if (dueTasks.length > 0) {
                 // Filter to show only due tasks
-                setFilterCriteria({ dueSoon: true });
+                setFilterCriteria({ due: true });
                 setSearchQuery('');
               }
             }}
@@ -287,7 +289,7 @@ export default function AdminDashboard() {
             <Card className="p-4 hover:shadow-md transition-all duration-300 border-l-4 border-l-orange-500 group">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase font-medium text-gray-500 tracking-wider">Due Soon</p>
+                  <p className="text-xs uppercase font-medium text-gray-500 tracking-wider">Due</p>
                   <motion.h3 
                     className="text-2xl font-semibold mt-1 text-orange-500" 
                     initial={{ opacity: 0 }}
