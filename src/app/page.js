@@ -38,7 +38,7 @@ export default function Home() {
             Welcome to <span className="text-[#5c6bc0]">Solomax-Workflows</span>
           </CardTitle>
           <CardDescription className="text-center text-[#6b7280] text-base font-normal">
-            Enterprise workflow management platform for seamless collaboration
+            Youtube workflow management platform for seamless collaboration
           </CardDescription>
         </CardHeader>
         <CardContent>

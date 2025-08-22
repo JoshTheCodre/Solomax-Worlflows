@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export function TaskBin({ isOpen, onClose }) {
+export function TaskBin({ isOpen = true, onClose = () => {} }) {
   const { 
     tasksInBin, 
     restoreTask, 
@@ -31,14 +31,20 @@ export function TaskBin({ isOpen, onClose }) {
   
   // Apply search filtering
   useEffect(() => {
-    const filtered = getFilteredTasks({
-      view: 'bin',
-      search: searchQuery
-    });
-    setFilteredTasks(filtered);
-    // Reset selection when filtered tasks change
-    setSelectedTasks([]);
-    setSelectAll(false);
+    // Make sure tasksInBin exists and is an array before filtering
+    if (Array.isArray(tasksInBin)) {
+      const filtered = getFilteredTasks({
+        view: 'bin',
+        search: searchQuery
+      });
+      setFilteredTasks(filtered || []);
+      // Reset selection when filtered tasks change
+      setSelectedTasks([]);
+      setSelectAll(false);
+    } else {
+      // If tasksInBin is not an array, set filtered tasks to empty array
+      setFilteredTasks([]);
+    }
   }, [tasksInBin, searchQuery, getFilteredTasks]);
   
   // Toggle selection of a single task
@@ -79,7 +85,7 @@ export function TaskBin({ isOpen, onClose }) {
   };
   
   const handleDeleteAll = async () => {
-    if (window.confirm(`Are you sure you want to permanently delete all ${tasksInBin.length} tasks in the bin? This action cannot be undone.`)) {
+    if (window.confirm(`Are you sure you want to permanently delete all ${filteredTasks.length} tasks in the bin? This action cannot be undone.`)) {
       await deleteAllTasksInBin();
     }
   };
@@ -124,7 +130,7 @@ export function TaskBin({ isOpen, onClose }) {
             <div className="flex items-center gap-2">
               <Trash2 className="h-5 w-5 text-gray-500" />
               <DialogTitle>Recycle Bin</DialogTitle>
-              <Badge variant="outline" className="ml-2">{tasksInBin.length}</Badge>
+              <Badge variant="outline" className="ml-2">{filteredTasks.length}</Badge>
             </div>
           </div>
         </DialogHeader>

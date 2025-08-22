@@ -54,7 +54,7 @@ export function Sidebar({ className }) {
         <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent tracking-wide font-sans">
           SOLOMAX
         </h1>
-        <p className="text-sm text-black mt-1 font-medium">Enterprise Workflows</p>
+        <p className="text-sm text-black mt-1 font-medium">Youtube Workflows</p>
       </div>
       <div className="flex-1 space-y-4 px-3 overflow-y-auto">
         <nav className="space-y-2">
