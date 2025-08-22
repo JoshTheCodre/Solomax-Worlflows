@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Filter, 
   ArrowUpDown, 
@@ -31,11 +31,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn, TASK_TYPES, TASK_STATUS, TASK_PRIORITY } from '@/lib/utils';
 import useTaskStore from '@/store/taskStore';
 import useAuthStore from '@/lib/store';
 
-export function TaskFilters({ hideSearch = false, compact = false }) {
+export function TaskFilters({ hideSearch = false, compact = false, onFilterChange }) {
   const { 
     setSortOrder, 
     sortOrder, 
@@ -89,6 +89,14 @@ export function TaskFilters({ hideSearch = false, compact = false }) {
     setActiveFilters(updatedFilters);
   }, [searchQuery, filterCriteria, user]);
   
+  // Use a ref to store the latest onFilterChange callback
+  const onFilterChangeRef = useRef(onFilterChange);
+  
+  // Update the ref whenever onFilterChange changes
+  useEffect(() => {
+    onFilterChangeRef.current = onFilterChange;
+  }, [onFilterChange]);
+  
   // Update filter criteria when search changes
   useEffect(() => {
     const newCriteria = { ...filterCriteria };
@@ -100,6 +108,11 @@ export function TaskFilters({ hideSearch = false, compact = false }) {
     }
     
     setFilterCriteria(newCriteria);
+    
+    // Call the external handler if provided using the ref
+    if (onFilterChangeRef.current) {
+      onFilterChangeRef.current(newCriteria);
+    }
   }, [searchQuery, setFilterCriteria]);
   
   const clearFilter = (key) => {
@@ -110,18 +123,35 @@ export function TaskFilters({ hideSearch = false, compact = false }) {
     if (key === 'search') {
       setSearchQuery('');
     }
+    
+    // Call the external handler if provided using the ref
+    if (onFilterChangeRef.current) {
+      onFilterChangeRef.current(newCriteria);
+    }
   };
   
   const clearAllFilters = () => {
     setFilterCriteria({});
     setSearchQuery('');
+    
+    // Call the external handler if provided using the ref
+    if (onFilterChangeRef.current) {
+      onFilterChangeRef.current({});
+    }
   };
   
   const setFilter = (key, value) => {
-    setFilterCriteria({
+    const newFilters = {
       ...filterCriteria,
       [key]: value
-    });
+    };
+    
+    setFilterCriteria(newFilters);
+    
+    // Call the external handler if provided using the ref
+    if (onFilterChangeRef.current) {
+      onFilterChangeRef.current(newFilters);
+    }
   };
   
   return (
@@ -169,40 +199,47 @@ export function TaskFilters({ hideSearch = false, compact = false }) {
             
             {/* Status Filter */}
             <DropdownMenuLabel className="text-xs font-normal text-gray-500 pt-1">Status</DropdownMenuLabel>
-            {['active', 'completed', 'pending'].map(status => (
-              <DropdownMenuItem key={status} onClick={() => setFilter('status', status)}>
+            {[
+              { value: TASK_STATUS.ACTIVE, label: 'Active' },
+              { value: TASK_STATUS.IN_PROGRESS, label: 'In Progress' },
+              { value: TASK_STATUS.COMPLETED, label: 'Completed' },
+              { value: TASK_STATUS.PENDING_APPROVAL, label: 'Pending Review' }
+            ].map(status => (
+              <DropdownMenuItem key={status.value} onClick={() => setFilter('status', status.value)}>
                 <div className={cn(
                   "h-2 w-2 rounded-full mr-2",
-                  status === 'active' ? "bg-green-500" :
-                  status === 'completed' ? "bg-blue-500" :
+                  status.value === TASK_STATUS.ACTIVE ? "bg-green-500" :
+                  status.value === TASK_STATUS.COMPLETED ? "bg-blue-500" :
+                  status.value === TASK_STATUS.PENDING_APPROVAL ? "bg-purple-500" :
+                  status.value === TASK_STATUS.IN_PROGRESS ? "bg-orange-500" :
                   "bg-amber-500"
                 )} />
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+                {status.label}
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
             
             {/* Priority Filter */}
             <DropdownMenuLabel className="text-xs font-normal text-gray-500 pt-1">Priority</DropdownMenuLabel>
-            {['high', 'medium', 'low'].map(priority => (
+            {Object.values(TASK_PRIORITY).map(priority => (
               <DropdownMenuItem key={priority} onClick={() => setFilter('priority', priority)}>
                 <div className={cn(
                   "h-2 w-2 rounded-full mr-2",
-                  priority === 'high' ? "bg-red-500" :
-                  priority === 'medium' ? "bg-orange-500" :
+                  priority.toLowerCase() === 'high' ? "bg-red-500" :
+                  priority.toLowerCase() === 'medium' ? "bg-orange-500" :
                   "bg-green-500"
                 )} />
-                {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                {priority.charAt(0).toUpperCase() + priority.slice(1).toLowerCase()}
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
             
             {/* Type Filter */}
             <DropdownMenuLabel className="text-xs font-normal text-gray-500 pt-1">Type</DropdownMenuLabel>
-            {['feature', 'bug', 'enhancement', 'documentation'].map(type => (
+            {Object.values(TASK_TYPES).map(type => (
               <DropdownMenuItem key={type} onClick={() => setFilter('type', type)}>
                 <Briefcase className="h-4 w-4 mr-2" />
-                {type.charAt(0).toUpperCase() + type.slice(1)}
+                {type}
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />

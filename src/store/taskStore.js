@@ -182,6 +182,30 @@ const useTaskStore = create((set, get) => ({
       return false;
     }
   },
+  
+  // Permanently delete all tasks in bin
+  deleteAllTasksInBin: async () => {
+    try {
+      set({ error: null, loading: true });
+      
+      const { tasksInBin } = get();
+      
+      // Delete each task in the bin
+      const deletePromises = tasksInBin.map(task => 
+        deleteDoc(doc(db, 'tasks', task.id))
+      );
+      
+      await Promise.all(deletePromises);
+      
+      // The real-time listener will automatically update the tasks list
+      set({ loading: false });
+      return true;
+    } catch (error) {
+      console.error('Error deleting all tasks in bin:', error);
+      set({ error: error.message, loading: false });
+      return false;
+    }
+  },
 
   transferTask: async (taskId, newAssignee, transferData = {}) => {
     try {
@@ -280,27 +304,48 @@ const useTaskStore = create((set, get) => ({
     let filteredTasks = taskList;
 
     if (mergedFilters.status) {
+      console.log(`Filtering by status: ${mergedFilters.status}`);
       filteredTasks = filteredTasks.filter(task => task.status === mergedFilters.status);
     }
 
     if (mergedFilters.assignee) {
+      console.log(`Filtering by assignee: ${mergedFilters.assignee}`);
       filteredTasks = filteredTasks.filter(task => task.assignee === mergedFilters.assignee);
     }
 
     if (mergedFilters.priority) {
-      filteredTasks = filteredTasks.filter(task => task.priority === mergedFilters.priority);
+      console.log(`Filtering by priority: ${mergedFilters.priority}`);
+      filteredTasks = filteredTasks.filter(task => {
+        // Case insensitive comparison for priority
+        return task.priority && task.priority.toLowerCase() === mergedFilters.priority.toLowerCase();
+      });
     }
 
     if (mergedFilters.type) {
+      console.log(`Filtering by type: ${mergedFilters.type}`);
       filteredTasks = filteredTasks.filter(task => task.type === mergedFilters.type);
+    }
+
+    // Filter for due soon tasks
+    if (mergedFilters.dueSoon) {
+      const now = new Date();
+      filteredTasks = filteredTasks.filter(task => {
+        if (!task.deadline) return false;
+        const deadline = task.deadline.toDate ? task.deadline.toDate() : new Date(task.deadline);
+        return deadline < now && task.status !== 'completed';
+      });
     }
 
     if (mergedFilters.search) {
       const searchLower = mergedFilters.search.toLowerCase();
+      console.log(`Searching for: ${searchLower}`);
       filteredTasks = filteredTasks.filter(task =>
-        task.title?.toLowerCase().includes(searchLower) ||
-        task.description?.toLowerCase().includes(searchLower) ||
-        task.assignee?.toLowerCase().includes(searchLower)
+        (task.title?.toLowerCase() || '').includes(searchLower) ||
+        (task.description?.toLowerCase() || '').includes(searchLower) ||
+        (task.assignee?.toLowerCase() || '').includes(searchLower) ||
+        (task.type?.toLowerCase() || '').includes(searchLower) ||
+        (task.status?.toLowerCase() || '').includes(searchLower) ||
+        (task.priority?.toLowerCase() || '').includes(searchLower)
       );
     }
     
@@ -324,6 +369,7 @@ const useTaskStore = create((set, get) => ({
 
 // Helper function to sort tasks
 const sortTasks = (tasks, sortType) => {
+  console.log(`Sorting tasks by: ${sortType}`);
   switch (sortType) {
     case 'newest':
       return [...tasks].sort((a, b) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import useTaskStore from '@/store/taskStore';
 import useAuthStore from '@/lib/store';
 import { seedDummyTasks } from '@/lib/seed';
@@ -61,6 +61,12 @@ export default function AdminDashboard() {
     bin: 0
   });
   
+  // Memoized filter change handler to prevent recreation on each render
+  const handleFilterChange = useCallback((newFilters) => {
+    console.log("Filters changed:", newFilters);
+    setFilterCriteria(newFilters);
+  }, [setFilterCriteria]);
+  
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -107,6 +113,7 @@ export default function AdminDashboard() {
         delete criteria.search;
       }
       
+      console.log("Updating filter criteria with search:", criteria);
       setFilterCriteria(criteria);
     }
   }, [searchQuery, filterCriteria.search, setFilterCriteria]);
@@ -117,14 +124,27 @@ export default function AdminDashboard() {
     
     // Calculate stats
     const now = new Date();
+    
+    const activeCount = tasks.filter(t => t.status === TASK_STATUS.ACTIVE).length;
+    const completedCount = tasks.filter(t => t.status === TASK_STATUS.COMPLETED).length;
+    const dueCount = tasks.filter(t => {
+      if (!t.deadline) return false;
+      const deadline = t.deadline.toDate ? t.deadline.toDate() : new Date(t.deadline);
+      return deadline < now && t.status !== TASK_STATUS.COMPLETED;
+    }).length;
+    
+    console.log('KPI Card stats:', {
+      active: activeCount,
+      completed: completedCount,
+      due: dueCount,
+      review: pendingReviews.length,
+      bin: tasksInBin.length
+    });
+    
     setStats({
-      active: tasks.filter(t => t.status === TASK_STATUS.ACTIVE).length,
-      completed: tasks.filter(t => t.status === TASK_STATUS.COMPLETED).length,
-      due: tasks.filter(t => {
-        if (!t.deadline) return false;
-        const deadline = t.deadline.toDate ? t.deadline.toDate() : new Date(t.deadline);
-        return deadline < now && t.status !== TASK_STATUS.COMPLETED;
-      }).length,
+      active: activeCount,
+      completed: completedCount,
+      due: dueCount,
       review: pendingReviews.length,
       bin: tasksInBin.length
     });
@@ -186,7 +206,15 @@ export default function AdminDashboard() {
     >
       {/* Stats Cards - Redesigned for more professional look */}
       <motion.div className="grid grid-cols-2 md:grid-cols-5 gap-4" variants={itemVariants}>
-          <motion.div variants={itemVariants} whileHover={{ scale: 1.02 }} className="w-full">
+          <motion.div 
+            variants={itemVariants} 
+            whileHover={{ scale: 1.02 }} 
+            className="w-full cursor-pointer"
+            onClick={() => {
+              setFilterCriteria({ status: TASK_STATUS.ACTIVE });
+              setSearchQuery('');
+            }}
+          >
             <Card className="p-4 hover:shadow-md transition-all duration-300 border-l-4 border-l-blue-500 group">
               <div className="flex items-center justify-between">
                 <div>
@@ -207,7 +235,15 @@ export default function AdminDashboard() {
             </Card>
           </motion.div>
 
-          <motion.div variants={itemVariants} whileHover={{ scale: 1.02 }} className="w-full">
+          <motion.div 
+            variants={itemVariants} 
+            whileHover={{ scale: 1.02 }} 
+            className="w-full cursor-pointer"
+            onClick={() => {
+              setFilterCriteria({ status: TASK_STATUS.COMPLETED });
+              setSearchQuery('');
+            }}
+          >
             <Card className="p-4 hover:shadow-md transition-all duration-300 border-l-4 border-l-green-500 group">
               <div className="flex items-center justify-between">
                 <div>
@@ -228,7 +264,26 @@ export default function AdminDashboard() {
             </Card>
           </motion.div>
 
-          <motion.div variants={itemVariants} whileHover={{ scale: 1.02 }} className="w-full">
+          <motion.div 
+            variants={itemVariants} 
+            whileHover={{ scale: 1.02 }} 
+            className="w-full cursor-pointer"
+            onClick={() => {
+              // Filter tasks with deadlines that have passed and are not completed
+              const now = new Date();
+              const dueTasks = tasks.filter(t => {
+                if (!t.deadline) return false;
+                const deadline = t.deadline.toDate ? t.deadline.toDate() : new Date(t.deadline);
+                return deadline < now && t.status !== TASK_STATUS.COMPLETED;
+              });
+              
+              if (dueTasks.length > 0) {
+                // Filter to show only due tasks
+                setFilterCriteria({ dueSoon: true });
+                setSearchQuery('');
+              }
+            }}
+          >
             <Card className="p-4 hover:shadow-md transition-all duration-300 border-l-4 border-l-orange-500 group">
               <div className="flex items-center justify-between">
                 <div>
@@ -249,7 +304,12 @@ export default function AdminDashboard() {
             </Card>
           </motion.div>
           
-          <motion.div variants={itemVariants} whileHover={{ scale: 1.02 }} className="w-full">
+          <motion.div 
+            variants={itemVariants} 
+            whileHover={{ scale: 1.02 }} 
+            className="w-full cursor-pointer" 
+            onClick={() => setIsReviewModalOpen(true)}
+          >
             <Card className="p-4 hover:shadow-md transition-all duration-300 border-l-4 border-l-indigo-500 group">
               <div className="flex items-center justify-between">
                 <div>
@@ -270,7 +330,12 @@ export default function AdminDashboard() {
             </Card>
           </motion.div>
           
-          <motion.div variants={itemVariants} whileHover={{ scale: 1.02 }} className="w-full">
+          <motion.div 
+            variants={itemVariants} 
+            whileHover={{ scale: 1.02 }} 
+            className="w-full cursor-pointer"
+            onClick={() => setIsBinOpen(true)}
+          >
             <Card className="p-4 hover:shadow-md transition-all duration-300 border-l-4 border-l-gray-500 group">
               <div className="flex items-center justify-between">
                 <div>
@@ -296,94 +361,47 @@ export default function AdminDashboard() {
           className="rounded-xl border bg-card shadow-lg overflow-hidden max-w-full"
           variants={itemVariants}
         >
-          <div className="px-6 py-4 border-b bg-gray-50/50 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <AddTaskModal onSubmit={handleCreateTask} className="mr-2" />
-              <Button 
-                variant="outline" 
-                onClick={seedDummyTasks}
-                className="text-sm group transition-all hover:shadow-lg hover:border-purple-500"
-              >
-                <Plus className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-                Demo Data
-              </Button>
-              
-              {user?.role === 'admin' && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsBinOpen(true)}
-                    className="text-sm group transition-all hover:shadow-lg hover:border-gray-500"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-                    Recycle Bin
-                    {stats.bin > 0 && (
-                      <motion.span 
-                        className="ml-2 w-5 h-5 bg-gray-500 rounded-full flex items-center justify-center text-white text-xs"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 15 }}
-                      >
-                        {stats.bin}
-                      </motion.span>
-                    )}
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsReviewModalOpen(true)}
-                    className="text-sm group transition-all hover:shadow-lg hover:border-blue-500"
-                  >
-                    <FileCheck className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-                    Review Tasks
-                    {stats.review > 0 && (
-                      <motion.span 
-                        className="ml-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 15 }}
-                      >
-                        {stats.review}
-                      </motion.span>
-                    )}
-                  </Button>
-                </>
-              )}
-            </div>
-            <div className="text-sm text-gray-500">
-              {filteredTasks.length} total tasks
-            </div>
-          </div>
-          
-          <motion.div 
-            className="px-6 pt-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1 min-w-[200px]">
-                <Input
-                  type="text"
-                  placeholder="Search tasks..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-3 pr-10 h-10"
-                />
-                {searchQuery && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-0 top-0 h-full w-10 p-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
+          <div className="px-6 py-4 border-b bg-gray-50/50">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-medium text-gray-800">Task Management</h3>
+              <div className="text-sm text-gray-500">
+                {filteredTasks.length} total tasks
               </div>
-              <TaskFilters hideSearch={true} compact={true} />
             </div>
-          </motion.div>
+            
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Input
+                    type="text"
+                    placeholder="Search tasks..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-3 pr-10 h-10"
+                  />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-0 top-0 h-full w-10 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <TaskFilters 
+                  hideSearch={true} 
+                  compact={true} 
+                  onFilterChange={handleFilterChange}
+                />
+              </div>
+            </motion.div>
+          </div>
           
           <motion.div 
             className="p-6"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import {
@@ -25,7 +25,8 @@ import {
   ArrowUpRightFromCircle,
   PenSquare,
   FileCheck,
-  Search
+  Search,
+  X
 } from 'lucide-react';
 
 import { TASK_STATUS, TASK_TYPES, TASK_PRIORITY, getStatusColor, getPriorityColor } from '@/lib/utils';
@@ -34,6 +35,11 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
   const [currentPage, setCurrentPage] = useState(1);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [selectedTaskForTransfer, setSelectedTaskForTransfer] = useState(null);
+  const [selectedTasks, setSelectedTasks] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const topScrollRef = useRef(null);
+  const contentScrollRef = useRef(null);
   const itemsPerPage = 10;
 
   // Ensure data is an array
@@ -100,6 +106,55 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
     );
   };
 
+  // Handle checkbox selection
+  const toggleTaskSelection = (e, taskId) => {
+    e.stopPropagation();
+    if (selectedTasks.includes(taskId)) {
+      setSelectedTasks(selectedTasks.filter(id => id !== taskId));
+    } else {
+      setSelectedTasks([...selectedTasks, taskId]);
+    }
+  };
+
+  const toggleSelectAll = (e) => {
+    e.stopPropagation();
+    if (selectAll) {
+      setSelectedTasks([]);
+    } else {
+      setSelectedTasks(paginatedData.map(task => task.id));
+    }
+    setSelectAll(!selectAll);
+  };
+  
+  const unselectAll = (e) => {
+    e?.stopPropagation();
+    setSelectedTasks([]);
+    setSelectAll(false);
+  };
+
+  const handleDeleteSelected = () => {
+    if (window.confirm(`Are you sure you want to delete ${selectedTasks.length} selected tasks?`)) {
+      selectedTasks.forEach(taskId => {
+        onDeleteTask(taskId);
+      });
+      setSelectedTasks([]);
+      setSelectAll(false);
+    }
+  };
+  
+  // Scroll synchronization functions
+  const handleTopScroll = (e) => {
+    if (contentScrollRef.current) {
+      contentScrollRef.current.scrollLeft = e.target.scrollLeft;
+    }
+  };
+  
+  const handleContentScroll = (e) => {
+    if (topScrollRef.current) {
+      topScrollRef.current.scrollLeft = e.target.scrollLeft;
+    }
+  };
+
   const renderActions = (task) => (
     <div className="flex items-center gap-2">
       <EditTaskModal
@@ -161,11 +216,25 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
   return (
     <div className="space-y-4">
       <div className="rounded-md border">
-        <div className="overflow-x-auto">
+        {/* Content area without vertical scrollbar */}
+        <div 
+          className="overflow-x-auto" 
+          ref={contentScrollRef}
+        >
           <div className="inline-block min-w-full align-middle">
             <Table className="min-w-full">
               <TableHeader>
                 <TableRow>
+                  <TableHead className="bg-gray-50/80 w-10 px-2">
+                    <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        checked={selectAll}
+                        onChange={toggleSelectAll}
+                      />
+                    </div>
+                  </TableHead>
                   <TableHead className="bg-gray-50/80 pl-5 font-medium text-gray-600 text-xs uppercase tracking-wider py-6 min-w-[400px] px-6">
                     Summary
                   </TableHead>
@@ -200,6 +269,19 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
                       transition={{ delay: index * 0.05, duration: 0.3 }}
                       layout
                     >
+                      <TableCell className="w-10 px-2">
+                        <div 
+                          className="flex items-center justify-center" 
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            checked={selectedTasks.includes(task.id)}
+                            onChange={(e) => toggleTaskSelection(e, task.id)}
+                          />
+                        </div>
+                      </TableCell>
                       <TableCell className="min-w-[400px] px-6 py-6">
                         {renderTaskSummary(task)}
                       </TableCell>
@@ -257,26 +339,42 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
         </div>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-end space-x-2 mt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+      <div className="flex items-center justify-between mt-4">
+        {selectedTasks.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteSelected}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Selected ({selectedTasks.length})
+            </Button>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className={`flex items-center space-x-2 ${selectedTasks.length > 0 ? 'ml-auto' : 'ml-auto'}`}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Transfer Task Modal */}
       {selectedTaskForTransfer && (

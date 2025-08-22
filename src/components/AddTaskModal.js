@@ -25,7 +25,7 @@ import { db } from '@/lib/firebase';
 import { TASK_TYPES, TASK_PRIORITY } from '@/lib/utils';
 import { Calendar, Clock, UploadCloud, FileText, Briefcase, User2, CheckCircle2 } from 'lucide-react';
 
-export function AddTaskModal({ onSubmit }) {
+export function AddTaskModal({ onSubmit, children }) {
   const [open, setOpen] = useState(false);
   const [attachments, setAttachments] = useState([]);
   const [users, setUsers] = useState([]);
@@ -93,10 +93,12 @@ export function AddTaskModal({ onSubmit }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-gradient-to-r from-blue-900 to-blue-700 text-white gap-2 shadow-lg hover:shadow-blue-200 font-medium px-6 border border-blue-800 hover:from-blue-800 hover:to-blue-600 transition-all duration-300">
-          <CheckCircle2 className="w-4 h-4" />
-          Create Task
-        </Button>
+        {children || (
+          <Button className="bg-gradient-to-r from-blue-900 to-blue-700 text-white gap-2 shadow-lg hover:shadow-blue-200 font-medium px-6 border border-blue-800 hover:from-blue-800 hover:to-blue-600 transition-all duration-300">
+            <CheckCircle2 className="w-4 h-4" />
+            Create Task
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-3xl">
         <DialogHeader>

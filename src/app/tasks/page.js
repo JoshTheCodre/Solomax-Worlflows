@@ -7,8 +7,9 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import useAuthStore from '@/lib/store';
-import { useTaskStore } from '@/store';
+import useTaskStore from '@/store/taskStore';
 import { EditTaskModal } from '@/components/EditTaskModal';
+import { AddTaskModal } from '@/components/AddTaskModal';
 
 export default function TasksPage() {
   const { user } = useAuthStore();
@@ -169,10 +170,26 @@ export default function TasksPage() {
     <div className="h-full flex">
       {/* Task List */}
       <div className="flex-1 overflow-auto border-r">
-        <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-semibold text-gray-900">Tasks</h1>
-            <Button>New Task</Button>
+            <AddTaskModal onSubmit={async (taskData) => {
+              try {
+                await useTaskStore.getState().addTask({
+                  ...taskData,
+                  createdBy: user.email,
+                  activity: [
+                    {
+                      user: user.displayName || user.email,
+                      action: 'created the task',
+                      timestamp: new Date()
+                    }
+                  ]
+                });
+              } catch (error) {
+                console.error('Error creating task:', error);
+              }
+            }} />
+          </div>ton>New Task</Button>
           </div>
           
           <Tabs defaultValue="all" className="w-full">
