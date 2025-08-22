@@ -45,6 +45,16 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
 
   // Ensure data is an array
   const safeData = Array.isArray(data) ? data : [];
+  
+  // Debug data received by TaskTable
+  console.log(`TaskTable received ${safeData.length} tasks`);
+  if (safeData.length > 0) {
+    console.log('First 3 tasks status values:', safeData.slice(0, 3).map(t => ({ 
+      id: t.id, 
+      title: t.title,
+      status: t.status 
+    })));
+  }
 
   // Calculate pagination
   const totalPages = Math.ceil(safeData.length / itemsPerPage);
@@ -69,8 +79,19 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
       deadline = 'No deadline';
     }
 
-    const isCompleted = task.status === TASK_STATUS.COMPLETED;
-    const statusColor = getStatusColor(isDue ? 'due' : (task.status || 'active'));
+    // Debug the actual status being processed
+    console.log(`Rendering task ${task.id} (${task.title}) with status:`, {
+      rawStatus: task.status,
+      statusType: typeof task.status,
+      isDue: isDue,
+      isCompleted: task.status === TASK_STATUS.COMPLETED
+    });
+
+    // Normalize status for display - handle null/undefined as 'active'
+    const normalizedStatus = task.status || 'active';
+    const displayStatus = isDue ? 'due' : normalizedStatus;
+    
+    const statusColor = getStatusColor(displayStatus);
     
     return (
       <div className="flex flex-col gap-3">
@@ -78,16 +99,16 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
         <div className="flex items-center">
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-semibold text-gray-900">{task.title}</span>
-            <Badge className={`${getStatusColor(isDue ? 'due' : task.status)} text-xs px-2 py-0.5 ml-1.5 shadow-sm`}>
+            <Badge className={`${statusColor} text-xs px-2 py-0.5 ml-1.5 shadow-sm`}>
               <div className="flex items-center gap-1">
-                {task.status === TASK_STATUS.COMPLETED ? (
+                {normalizedStatus === TASK_STATUS.COMPLETED ? (
                   <CheckCircle2 className="w-3 h-3" />
                 ) : isDue ? (
                   <Clock className="w-3 h-3" />
                 ) : (
                   <CircleDot className="w-3 h-3" />
                 )}
-                <span>{getFormattedStatus(task.status, isDue)}</span>
+                <span>{getFormattedStatus(normalizedStatus, isDue)}</span>
               </div>
             </Badge>
           </div>

@@ -3,26 +3,7 @@
 import { useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@            <AddTaskModal onSubmit={async (taskData) => {
-              try {
-                await useTaskStore.getState().addTask({
-                  ...taskData,
-                  createdBy: user.email,
-                  activity: [
-                    {
-                      user: user.displayName || user.email,
-                      action: 'created the task',
-                      timestamp: new Date()
-                    }
-                  ]
-                });
-              } catch (error) {
-                console.error('Error creating task:', error);
-              }
-            }}>
-              <Button>New Task</Button>
-            </AddTaskModal>
-          </div>';
+import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import useAuthStore from '@/lib/store';

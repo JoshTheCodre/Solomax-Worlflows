@@ -119,20 +119,60 @@ export default function AdminDashboard() {
     }
   }, [searchQuery, filterCriteria.search, setFilterCriteria]);
   
+  // Reset filters when component unmounts to avoid filter persistence issues
+  useEffect(() => {
+    return () => {
+      // Reset filters when leaving the page
+      setFilterCriteria({});
+    };
+  }, []);
+  
   // Apply filters and calculate stats
   useEffect(() => {
     // Update filtered tasks when tasks, filter criteria, or sort order changes
-    setFilteredTasks(getFilteredTasks());
+    console.log('Applying filters with criteria:', filterCriteria, 'sort order:', sortOrder);
+    
+    // Force a direct call to getFilteredTasks with the current filterCriteria
+    // This ensures we always use the latest filter criteria
+    const filtered = getFilteredTasks({...filterCriteria});
+    
+    console.log(`Filter result: ${filtered.length} tasks`);
+    if (filtered.length > 0) {
+      console.log('First few filtered tasks:', filtered.slice(0, 3).map(t => ({
+        id: t.id,
+        title: t.title,
+        status: t.status
+      })));
+    }
+    
+    setFilteredTasks(filtered);
     
     // Calculate stats
     const now = new Date();
     
-    const activeCount = tasks.filter(t => t.status === TASK_STATUS.ACTIVE).length;
-    const completedCount = tasks.filter(t => t.status === TASK_STATUS.COMPLETED).length;
+    console.log('Calculating stats for tasks:', tasks.map(t => ({ id: t.id, title: t.title, status: t.status })));
+    
+    // ACTIVE COUNT: Count tasks that have 'active' status (or no status, treated as active)
+    const activeCount = tasks.filter(t => {
+      const taskStatus = String(t.status || '').trim().toLowerCase();
+      // Count tasks that are explicitly 'active' or have no status (treated as active)
+      return taskStatus === 'active' || taskStatus === '' || !t.status;
+    }).length;
+    
+    // COMPLETED COUNT: Count tasks that have 'completed' status
+    const completedCount = tasks.filter(t => {
+      const taskStatus = String(t.status || '').trim().toLowerCase();
+      return taskStatus === String(TASK_STATUS.COMPLETED).trim().toLowerCase();
+    }).length;
+    
+    // DUE COUNT: Count tasks that have passed their deadline AND are not completed
+    // This is independent of status - a task can be 'active', 'in_progress', etc. and still be due
     const dueCount = tasks.filter(t => {
       if (!t.deadline) return false;
       const deadline = t.deadline.toDate ? t.deadline.toDate() : new Date(t.deadline);
-      return deadline < now && t.status !== TASK_STATUS.COMPLETED;
+      const isPastDeadline = deadline < now;
+      const isNotCompleted = String(t.status || '').trim().toLowerCase() !== 'completed';
+      return isPastDeadline && isNotCompleted;
     }).length;
     
     console.log('KPI Card stats:', {
@@ -213,14 +253,23 @@ export default function AdminDashboard() {
             whileHover={{ scale: 1.02 }} 
             className="w-full cursor-pointer"
             onClick={() => {
-              setFilterCriteria({ status: TASK_STATUS.ACTIVE });
+              console.log('Active Status card clicked - filtering by task status = "active"');
+              console.log('Current filterCriteria before change:', filterCriteria);
+              
+              // Set filter criteria for active tasks
+              const newFilters = { status: TASK_STATUS.ACTIVE };
+              console.log('Setting filter to show tasks with active status:', newFilters);
+              console.log('TASK_STATUS.ACTIVE value is:', TASK_STATUS.ACTIVE);
+              
+              // Clear search query and set new filter
               setSearchQuery('');
+              setFilterCriteria(newFilters);
             }}
           >
             <Card className="p-4 hover:shadow-md transition-all duration-300 border-l-4 border-l-blue-500 group">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase font-medium text-gray-500 tracking-wider">Active Tasks</p>
+                  <p className="text-xs uppercase font-medium text-gray-500 tracking-wider">Active Status</p>
                   <motion.h3 
                     className="text-2xl font-semibold mt-1" 
                     initial={{ opacity: 0 }}
@@ -242,8 +291,16 @@ export default function AdminDashboard() {
             whileHover={{ scale: 1.02 }} 
             className="w-full cursor-pointer"
             onClick={() => {
-              setFilterCriteria({ status: TASK_STATUS.COMPLETED });
+              console.log('Completed Tasks card clicked');
+              
+              // Set filter criteria for completed tasks
+              const newFilters = { status: TASK_STATUS.COMPLETED };
+              console.log('Setting filter to show completed tasks:', newFilters);
+              console.log('TASK_STATUS.COMPLETED value is:', TASK_STATUS.COMPLETED);
+              
+              // Clear search query and set new filter
               setSearchQuery('');
+              setFilterCriteria(newFilters);
             }}
           >
             <Card className="p-4 hover:shadow-md transition-all duration-300 border-l-4 border-l-green-500 group">
@@ -271,25 +328,21 @@ export default function AdminDashboard() {
             whileHover={{ scale: 1.02 }} 
             className="w-full cursor-pointer"
             onClick={() => {
-              // Filter tasks with deadlines that have passed and are not completed
-              const now = new Date();
-              const dueTasks = tasks.filter(t => {
-                if (!t.deadline) return false;
-                const deadline = t.deadline.toDate ? t.deadline.toDate() : new Date(t.deadline);
-                return deadline < now && t.status !== TASK_STATUS.COMPLETED;
-              });
+              console.log('Past Deadline card clicked - filtering by tasks past their deadline (regardless of status)');
               
-              if (dueTasks.length > 0) {
-                // Filter to show only due tasks
-                setFilterCriteria({ due: true });
-                setSearchQuery('');
-              }
+              // Filter tasks with deadlines that have passed and are not completed
+              const newFilters = { due: true };
+              console.log('Setting filter to show due tasks (past deadline, not completed):', newFilters);
+              
+              // Clear search query and set new filter
+              setSearchQuery('');
+              setFilterCriteria(newFilters);
             }}
           >
             <Card className="p-4 hover:shadow-md transition-all duration-300 border-l-4 border-l-orange-500 group">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase font-medium text-gray-500 tracking-wider">Due</p>
+                  <p className="text-xs uppercase font-medium text-gray-500 tracking-wider">Past Deadline</p>
                   <motion.h3 
                     className="text-2xl font-semibold mt-1 text-orange-500" 
                     initial={{ opacity: 0 }}
@@ -366,8 +419,29 @@ export default function AdminDashboard() {
           <div className="px-6 py-4 border-b bg-gray-50/50">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-medium text-gray-800">Task Management</h3>
-              <div className="text-sm text-gray-500">
-                {filteredTasks.length} total tasks
+              <div className="flex items-center gap-3">
+                <div className="text-sm text-gray-500">
+                  {filteredTasks.length} total tasks
+                  {Object.keys(filterCriteria).length > 0 && (
+                    <div className="text-xs text-blue-600 mt-1">
+                      Active filter: {JSON.stringify(filterCriteria)}
+                    </div>
+                  )}
+                </div>
+                {Object.keys(filterCriteria).length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      console.log('Clearing all filters');
+                      setFilterCriteria({});
+                      setSearchQuery('');
+                    }}
+                    className="text-xs"
+                  >
+                    Clear Filters
+                  </Button>
+                )}
               </div>
             </div>
             

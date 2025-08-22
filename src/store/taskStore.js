@@ -19,10 +19,30 @@ const useTaskStore = create((set, get) => ({
 
   // Actions
   setTasks: (tasks) => {
-    // Separate active tasks from deleted (in bin) and pending review tasks
-    const activeTasks = tasks.filter(task => task.status !== 'deleted' && task.status !== 'pending_review');
-    const binTasks = tasks.filter(task => task.status === 'deleted');
-    const reviewTasks = tasks.filter(task => task.status === 'pending_review');
+    console.log('setTasks called with', tasks.length, 'tasks');
+    
+    // Log all unique status values to understand what we're working with
+    const statusValues = [...new Set(tasks.map(t => t.status))];
+    console.log('Unique status values found in tasks:', statusValues);
+    
+    // Separate tasks by status more explicitly
+    const activeTasks = tasks.filter(task => {
+      const status = String(task.status || '').trim().toLowerCase();
+      // Include tasks that are active, in_progress, completed, or have no status (default to active)
+      return status !== 'deleted' && status !== 'pending_review';
+    });
+    
+    const binTasks = tasks.filter(task => {
+      const status = String(task.status || '').trim().toLowerCase();
+      return status === 'deleted';
+    });
+    
+    const reviewTasks = tasks.filter(task => {
+      const status = String(task.status || '').trim().toLowerCase();
+      return status === 'pending_review';
+    });
+    
+    console.log(`Task distribution: ${activeTasks.length} active, ${binTasks.length} in bin, ${reviewTasks.length} pending review`);
     
     // Add a small delay to show the loading animation
     setTimeout(() => {
@@ -291,6 +311,11 @@ const useTaskStore = create((set, get) => ({
     const mergedFilters = { ...get().filterCriteria, ...filters };
     const { tasks, tasksInBin, pendingReviews, sortOrder } = get();
     
+    // Debug filter criteria
+    console.log('getFilteredTasks called with filters:', filters);
+    console.log('Current filterCriteria in store:', get().filterCriteria);
+    console.log('Merged filters being applied:', mergedFilters);
+    
     // Determine which task list to use based on view
     let taskList;
     if (mergedFilters.view === 'bin') {
@@ -305,7 +330,39 @@ const useTaskStore = create((set, get) => ({
 
     if (mergedFilters.status) {
       console.log(`Filtering by status: ${mergedFilters.status}`);
-      filteredTasks = filteredTasks.filter(task => task.status === mergedFilters.status);
+      // Added debug to see status values in tasks
+      console.log('Status values in first few tasks:', filteredTasks.slice(0, 5).map(t => ({ id: t.id, status: t.status })));
+      
+      const targetStatus = String(mergedFilters.status).trim().toLowerCase();
+      
+      filteredTasks = filteredTasks.filter(task => {
+        // Handle case sensitivity and whitespace in status comparison
+        const taskStatus = String(task.status || '').trim().toLowerCase();
+        
+        // Special handling for 'active' status
+        if (targetStatus === 'active') {
+          // For 'active' filter, include tasks that are truly active or have no explicit status
+          // (treating empty/null status as active)
+          const isActive = taskStatus === 'active' || taskStatus === '' || !task.status;
+          
+          if (!isActive) {
+            console.log(`Task ${task.id} (${task.title}) has status "${taskStatus}" - excluding from active filter`);
+          }
+          
+          return isActive;
+        } else {
+          // For other statuses, do exact matching
+          const isMatch = taskStatus === targetStatus;
+          
+          if (!isMatch) {
+            console.log(`Task ${task.id} (${task.title}) has status "${taskStatus}" which doesn't match "${targetStatus}"`);
+          }
+          
+          return isMatch;
+        }
+      });
+      
+      console.log(`After status filtering: ${filteredTasks.length} tasks remaining`);
     }
 
     if (mergedFilters.assignee) {
@@ -326,14 +383,29 @@ const useTaskStore = create((set, get) => ({
       filteredTasks = filteredTasks.filter(task => task.type === mergedFilters.type);
     }
 
-    // Filter for due tasks
+    // Filter for due tasks - THIS IS SEPARATE FROM STATUS
+    // Due tasks are tasks that have passed their deadline regardless of their status
     if (mergedFilters.due) {
+      console.log('Filtering for due tasks (past deadline, not completed)');
       const now = new Date();
       filteredTasks = filteredTasks.filter(task => {
-        if (!task.deadline) return false;
+        if (!task.deadline) {
+          console.log(`Task ${task.id} has no deadline - excluding from due filter`);
+          return false;
+        }
+        
         const deadline = task.deadline.toDate ? task.deadline.toDate() : new Date(task.deadline);
-        return deadline < now && task.status !== 'completed';
+        const isPastDeadline = deadline < now;
+        const isNotCompleted = task.status !== 'completed';
+        const isDue = isPastDeadline && isNotCompleted;
+        
+        if (!isDue) {
+          console.log(`Task ${task.id} (${task.title}) - deadline: ${deadline}, past: ${isPastDeadline}, not completed: ${isNotCompleted} - ${isDue ? 'DUE' : 'NOT DUE'}`);
+        }
+        
+        return isDue;
       });
+      console.log(`After due filtering: ${filteredTasks.length} tasks remaining`);
     }
 
     if (mergedFilters.search) {

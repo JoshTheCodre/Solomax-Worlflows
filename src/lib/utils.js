@@ -52,8 +52,12 @@ export const TEAM_MEMBERS = [
 ];
 
 export const getStatusColor = (status) => {
-  switch (status) {
+  // Handle null/undefined status as 'active'
+  const normalizedStatus = status || 'active';
+  
+  switch (normalizedStatus) {
     case TASK_STATUS.ACTIVE:
+    case 'active': // Handle string literal case
       return 'bg-yellow-500/10 text-yellow-500';
     case TASK_STATUS.IN_PROGRESS:
       return 'bg-blue-500/10 text-blue-500';
@@ -66,7 +70,8 @@ export const getStatusColor = (status) => {
     case 'due':
       return 'bg-orange-500/10 text-orange-500';
     default:
-      return 'bg-gray-500/10 text-gray-500';
+      // Default to active styling for any unknown status
+      return 'bg-yellow-500/10 text-yellow-500';
   }
 };
 
@@ -88,8 +93,12 @@ export const getFormattedStatus = (status, isDue = false) => {
     return 'Due';
   }
   
-  switch (status) {
+  // Handle null/undefined status as 'active'
+  const normalizedStatus = status || 'active';
+  
+  switch (normalizedStatus) {
     case TASK_STATUS.ACTIVE:
+    case 'active': // Handle string literal case
       return 'Active';
     case TASK_STATUS.IN_PROGRESS:
       return 'In Progress';
@@ -102,6 +111,7 @@ export const getFormattedStatus = (status, isDue = false) => {
     case 'due':
       return 'Due';
     default:
+      // Default to 'Active' for any unknown status
       return 'Active';
   }
 };
