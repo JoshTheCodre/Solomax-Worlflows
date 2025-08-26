@@ -296,7 +296,7 @@ export default function ContentManagerPage() {
   }
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50">
+    <div className=" min-h-screen bg-gray-50">
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       
       {/* Header */}
