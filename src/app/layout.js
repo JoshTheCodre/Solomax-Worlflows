@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import useAuthStore from '@/lib/store';
 import { ToastContainer } from 'react-toastify';
 import { TaskNotificationsProvider } from '@/hooks/useTaskNotifications';
+import { MediaUploadWrapper } from '@/components/MediaUploadWrapper';
 import 'react-toastify/dist/ReactToastify.css';
 import "./globals.css";
 
@@ -41,9 +42,11 @@ export default function RootLayout({ children }) {
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <TaskNotificationsProvider>
-          <ClientLayout>
-            {children}
-          </ClientLayout>
+          <MediaUploadWrapper>
+            <ClientLayout>
+              {children}
+            </ClientLayout>
+          </MediaUploadWrapper>
         </TaskNotificationsProvider>
         <ToastContainer />
       </body>

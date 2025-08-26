@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,12 +22,14 @@ import { Card } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { collection, query, getDocs, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import useMediaStore from '@/store/mediaStore';
 import { TASK_TYPES, TASK_PRIORITY } from '@/lib/utils';
-import { Calendar, Clock, UploadCloud, FileText, Briefcase, User2, CheckCircle2 } from 'lucide-react';
+import { Calendar, Clock, UploadCloud, FileText, Briefcase, User2, CheckCircle2, File, FileImage, FileVideo, Music, Archive, X } from 'lucide-react';
 
-export function AddTaskModal({ onSubmit, children }) {
+export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, children, initialAttachments = [] }, ref) {
   const [open, setOpen] = useState(false);
   const [attachments, setAttachments] = useState([]);
+  const { uploadFiles } = useMediaStore();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,8 +38,65 @@ export function AddTaskModal({ onSubmit, children }) {
     type: '',
     priority: '',
     assignee: '',
-    deadline: new Date().toISOString().slice(0, 16),
+    deadline: new Date().toISOString().slice(0, 10), // YYYY-MM-DD format for date input
   });
+
+  // Helper function to get file type icon
+  const getFileIcon = (file) => {
+    const fileType = file.type?.toLowerCase() || '';
+    const fileName = file.original_filename?.toLowerCase() || '';
+    
+    // Adobe files
+    if (fileName.endsWith('.psd') || fileName.endsWith('.ai') || fileName.endsWith('.indd')) {
+      return <div className="w-4 h-4 bg-purple-500 rounded text-white text-xs flex items-center justify-center font-bold">A</div>;
+    }
+    // Audio files
+    if (fileType.startsWith('audio/') || fileName.endsWith('.mp3') || fileName.endsWith('.wav')) {
+      return <Music className="w-4 h-4 text-green-500" />;
+    }
+    // Video files
+    if (fileType.startsWith('video/') || fileName.endsWith('.mp4') || fileName.endsWith('.mov')) {
+      return <FileVideo className="w-4 h-4 text-blue-500" />;
+    }
+    // Image files
+    if (fileType.startsWith('image/')) {
+      return <FileImage className="w-4 h-4 text-purple-500" />;
+    }
+    // PDF files
+    if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+      return <div className="w-4 h-4 bg-red-500 rounded text-white text-xs flex items-center justify-center font-bold">P</div>;
+    }
+    // Text files
+    if (fileType.startsWith('text/') || fileName.endsWith('.txt')) {
+      return <FileText className="w-4 h-4 text-gray-500" />;
+    }
+    // Archive files
+    if (fileName.endsWith('.zip') || fileName.endsWith('.rar')) {
+      return <Archive className="w-4 h-4 text-yellow-500" />;
+    }
+    // Default
+    return <File className="w-4 h-4 text-gray-400" />;
+  };
+
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    openWithFiles: (files) => {
+      const fileAttachments = files.map(file => ({
+        original_filename: file.name,
+        size: file.size,
+        type: file.type,
+      }));
+      setAttachments(fileAttachments);
+      setOpen(true);
+    }
+  }));
+
+  // Handle initial attachments when modal opens
+  useEffect(() => {
+    if (open && initialAttachments.length > 0) {
+      setAttachments(initialAttachments);
+    }
+  }, [open, initialAttachments]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -80,7 +139,7 @@ export function AddTaskModal({ onSubmit, children }) {
         type: '',
         priority: '',
         assignee: '',
-        deadline: new Date().toISOString().slice(0, 16),
+        deadline: new Date().toISOString().slice(0, 10), // YYYY-MM-DD format for date input
       });
       setAttachments([]);
     } catch (error) {
@@ -135,7 +194,7 @@ export function AddTaskModal({ onSubmit, children }) {
                   </label>
                   <Input
                     id="deadline"
-                    type="datetime-local"
+                    type="date"
                     value={formData.deadline}
                     onChange={(e) =>
                       setFormData({ ...formData, deadline: e.target.value })
@@ -239,36 +298,50 @@ export function AddTaskModal({ onSubmit, children }) {
                   <div className="space-y-2">
                     <Input
                       type="file"
-                      onChange={(e) => {
-                        const files = Array.from(e.target.files || []);
-                        setAttachments((prev) => [
-                          ...prev,
-                          ...files.map((file) => ({
-                            original_filename: file.name,
-                            size: file.size,
-                            type: file.type,
-                          })),
-                        ]);
-                      }}
-                      className="w-full cursor-pointer file:bg-gray-100 file:text-gray-700 file:border-0 file:rounded file:px-4 file:py-2 file:mr-4 file:hover:bg-gray-200 file:cursor-pointer transition-all duration-200"
                       multiple
+                      onChange={async (e) => {
+                        const files = Array.from(e.target.files || []);
+                        if (files.length === 0) return;
+
+                        // Upload files to media store and get their metadata
+                        const uploads = await uploadFiles(files, { name: 'Current User', uid: 'current-user' });
+                        
+                        // Add to local attachments (these will be references to uploaded media)
+                        const newAttachments = files.map((file) => ({
+                          original_filename: file.name,
+                          size: file.size,
+                          type: file.type
+                        }));
+                        
+                        setAttachments((prev) => [...prev, ...newAttachments]);
+                        e.target.value = ''; // Reset input
+                      }}
+                      accept="*/*"
+                      className="cursor-pointer"
                     />
+                    <p className="text-xs text-gray-500">
+                      Files will be uploaded to your media library and attached to this task
+                    </p>
                     {attachments.length > 0 && (
-                      <div className="mt-2 space-y-1">
-                        {attachments.map((file, index) => (
-                          <div key={index} className="text-sm flex items-center gap-2">
-                            <span>{file.original_filename}</span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setAttachments((prev) => prev.filter((_, i) => i !== index))
-                              }
-                              className="text-gray-500 hover:text-gray-700"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-500 font-medium mb-2">Attached Files:</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {attachments.map((file, index) => (
+                            <div key={index} className="relative flex flex-col items-center p-2 bg-gray-50 rounded-md group hover:bg-gray-100 transition-colors">
+                              {getFileIcon(file)}
+                              <span className="text-xs text-gray-700 text-center truncate w-full mt-1">{file.original_filename}</span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setAttachments((prev) => prev.filter((_, i) => i !== index))
+                                }
+                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all text-xs"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -322,6 +395,6 @@ export function AddTaskModal({ onSubmit, children }) {
       </DialogContent>
     </Dialog>
   );
-}
+});
 
 

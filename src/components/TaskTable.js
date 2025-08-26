@@ -214,7 +214,7 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
       >
         <ArrowUpRightFromCircle className="w-4 h-4" />
       </Button>
-      {task.status !== TASK_STATUS.COMPLETED && task.status !== 'pending_review' && onRequestReview && (
+      {task.status !== TASK_STATUS.COMPLETED && task.status !== TASK_STATUS.PENDING_APPROVAL && onRequestReview && (
         <Button
           variant="ghost"
           size="sm"

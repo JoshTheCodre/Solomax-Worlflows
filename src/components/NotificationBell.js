@@ -27,6 +27,14 @@ export function NotificationBell() {
 
   const [showRipple, setShowRipple] = useState(false);
 
+  // Filter notifications for current user
+  const userNotifications = notifications.filter(notification => 
+    !notification.task || notification.task?.assignee === user?.email
+  );
+  
+  // Calculate user-specific unread count
+  const userUnreadCount = userNotifications.filter(notification => !notification.read).length;
+
   // Prevent body scroll when popup is open
   useEffect(() => {
     if (isOpen) {
@@ -118,7 +126,7 @@ export function NotificationBell() {
           </motion.div>
 
           {/* Unread Count Badge - scaled for larger bell */}
-          {unreadCount > 0 && (
+          {userUnreadCount > 0 && (
             <motion.div
               className={cn(
                 "absolute -top-1 -right-1 h-6 w-6 flex items-center justify-center text-sm font-semibold p-0", // Larger badge
@@ -132,12 +140,12 @@ export function NotificationBell() {
                 damping: 10
               }}
             >
-              {unreadCount > 99 ? '99+' : unreadCount}
+              {userUnreadCount > 99 ? '99+' : userUnreadCount}
             </motion.div>
           )}
 
           {/* Continuous Ripple Effect for Badge */}
-          {unreadCount > 0 && (
+          {userUnreadCount > 0 && (
             <div className="absolute -top-1 -right-1 h-6 w-6 rounded-full border-2 border-red-400 animate-ping opacity-30" />
           )}
         </motion.div>
@@ -159,7 +167,7 @@ export function NotificationBell() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg font-semibold">Notifications</CardTitle>
                 <div className="flex items-center gap-2">
-                  {unreadCount > 0 && (
+                  {userUnreadCount > 0 && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -188,7 +196,7 @@ export function NotificationBell() {
 
             <CardContent className="p-0 max-h-[500px] overflow-y-auto overscroll-contain">
               <div className="pb-4">
-                {notifications.length === 0 ? (
+                {userNotifications.length === 0 ? (
                   <motion.div 
                     className="p-6 text-center text-gray-500"
                     initial={{ opacity: 0 }}
@@ -204,7 +212,7 @@ export function NotificationBell() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >{/* Added padding bottom */}
-                    {notifications.map((notification, index) => {
+                    {userNotifications.map((notification, index) => {
                       const isUserTask = notification.task?.assignee === user?.email;
                       
                       return (

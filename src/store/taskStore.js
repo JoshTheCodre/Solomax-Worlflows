@@ -4,6 +4,8 @@ import { create } from 'zustand';
 import { doc, updateDoc, deleteDoc, addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { createTasksListener } from '@/lib/listeners';
+import useNotificationStore from './notificationStore';
+import useAuthStore from '@/lib/store';
 
 const useTaskStore = create((set, get) => ({
   // State
@@ -18,41 +20,62 @@ const useTaskStore = create((set, get) => ({
   pendingReviews: [], // Tasks awaiting review
 
   // Actions
-  setTasks: (tasks) => {
-    console.log('setTasks called with', tasks.length, 'tasks');
+  setTasks: (tasks, isAdminView = false) => {
+    console.log('setTasks called with', tasks.length, 'tasks', isAdminView ? '(admin view)' : '(user view)');
     
     // Log all unique status values to understand what we're working with
     const statusValues = [...new Set(tasks.map(t => t.status))];
     console.log('Unique status values found in tasks:', statusValues);
     
-    // Separate tasks by status more explicitly
-    const activeTasks = tasks.filter(task => {
-      const status = String(task.status || '').trim().toLowerCase();
-      // Include tasks that are active, in_progress, completed, or have no status (default to active)
-      return status !== 'deleted' && status !== 'pending_review';
-    });
-    
-    const binTasks = tasks.filter(task => {
-      const status = String(task.status || '').trim().toLowerCase();
-      return status === 'deleted';
-    });
-    
-    const reviewTasks = tasks.filter(task => {
-      const status = String(task.status || '').trim().toLowerCase();
-      return status === 'pending_review';
-    });
-    
-    console.log(`Task distribution: ${activeTasks.length} active, ${binTasks.length} in bin, ${reviewTasks.length} pending review`);
-    
-    // Add a small delay to show the loading animation
-    setTimeout(() => {
-      set({ 
-        tasks: activeTasks, 
-        tasksInBin: binTasks,
-        pendingReviews: reviewTasks,
-        loading: false 
+    if (isAdminView) {
+      // Admin view: separate tasks by status for different admin panels
+      const activeTasks = tasks.filter(task => {
+        const status = String(task.status || '').trim().toLowerCase();
+        // Include tasks that are active, in_progress, completed, rejected or have no status
+        return status !== 'deleted' && status !== 'pending_approval';
       });
-    }, 800); // 800ms delay to show skeleton
+      
+      const binTasks = tasks.filter(task => {
+        const status = String(task.status || '').trim().toLowerCase();
+        return status === 'deleted';
+      });
+      
+      const reviewTasks = tasks.filter(task => {
+        const status = String(task.status || '').trim().toLowerCase();
+        return status === 'pending_approval';
+      });
+      
+      console.log(`Admin task distribution: ${activeTasks.length} active, ${binTasks.length} in bin, ${reviewTasks.length} pending review`);
+      
+      // Add a small delay to show the loading animation
+      setTimeout(() => {
+        set({ 
+          tasks: activeTasks, 
+          tasksInBin: binTasks,
+          pendingReviews: reviewTasks,
+          loading: false 
+        });
+      }, 800); // 800ms delay to show skeleton
+    } else {
+      // User view: include all tasks (including pending approval) so users can see them in Reviews tab
+      const userTasks = tasks.filter(task => {
+        const status = String(task.status || '').trim().toLowerCase();
+        // Exclude only deleted tasks for user view
+        return status !== 'deleted';
+      });
+      
+      console.log(`User task distribution: ${userTasks.length} total tasks (excluding deleted)`);
+      
+      // Add a small delay to show the loading animation
+      setTimeout(() => {
+        set({ 
+          tasks: userTasks, 
+          tasksInBin: [], // Users don't see bin
+          pendingReviews: [], // Not needed for user view since pending approval tasks are in main tasks
+          loading: false 
+        });
+      }, 800); // 800ms delay to show skeleton
+    }
   },
   
   setSelectedTask: (task) => set({ selectedTask: task }),
@@ -80,8 +103,8 @@ const useTaskStore = create((set, get) => ({
 
     // Create new listener
     const unsubscribe = createTasksListener((tasks) => {
-      // Using the setTasks method that includes a delay for the animation
-      get().setTasks(tasks);
+      // Pass the adminView flag to setTasks to determine filtering behavior
+      get().setTasks(tasks, options.adminView || false);
     }, options);
 
     set({ listener: unsubscribe });
@@ -109,9 +132,28 @@ const useTaskStore = create((set, get) => ({
         status: taskData.status || 'active'
       };
 
-      await addDoc(collection(db, 'tasks'), newTask);
-      // The real-time listener will automatically update the state
+      const docRef = await addDoc(collection(db, 'tasks'), newTask);
       
+      // Send notification to the assigned user if there's an assignee
+      if (newTask.assignee) {
+        try {
+          console.log('Creating notification for task:', newTask.title, 'assigned to:', newTask.assignee);
+          const { addNotification, createTaskAssignedNotification } = useNotificationStore.getState();
+          const { user: currentUser } = useAuthStore.getState();
+          const notification = createTaskAssignedNotification(
+            { ...newTask, id: docRef.id }, 
+            currentUser?.name || currentUser?.email || 'Admin'
+          );
+          console.log('Created notification:', notification);
+          addNotification(notification);
+          console.log('Notification added to store');
+        } catch (notificationError) {
+          console.warn('Failed to send notification:', notificationError);
+          // Don't fail the task creation if notification fails
+        }
+      }
+      
+      // The real-time listener will automatically update the state
       return true;
     } catch (error) {
       console.error('Error adding task:', error);
@@ -252,7 +294,7 @@ const useTaskStore = create((set, get) => ({
       set({ error: null });
       
       const updatePayload = {
-        status: 'pending_review',
+        status: 'pending_approval',
         reviewRequestedAt: new Date(),
         reviewRequestedBy: reviewData.requestedBy || null,
         reviewNotes: reviewData.notes || '',
@@ -341,15 +383,15 @@ const useTaskStore = create((set, get) => ({
         
         // Special handling for 'active' status
         if (targetStatus === 'active') {
-          // For 'active' filter, include tasks that are truly active or have no explicit status
+          // For 'active' filter, include tasks that are active, in_progress, or have no explicit status
           // (treating empty/null status as active)
-          const isActive = taskStatus === 'active' || taskStatus === '' || !task.status;
+          const isActiveOrInProgress = taskStatus === 'active' || taskStatus === 'in_progress' || taskStatus === '' || !task.status;
           
-          if (!isActive) {
+          if (!isActiveOrInProgress) {
             console.log(`Task ${task.id} (${task.title}) has status "${taskStatus}" - excluding from active filter`);
           }
           
-          return isActive;
+          return isActiveOrInProgress;
         } else {
           // For other statuses, do exact matching
           const isMatch = taskStatus === targetStatus;

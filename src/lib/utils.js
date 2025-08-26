@@ -28,9 +28,10 @@ export const CONTENT_CHANNELS = {
 };
 
 export const MEDIA_TYPES = {
-  V0: 'v0',
+  PROJECT_FILES: 'project_files',
   DOCUMENT: 'document',
-  CUT: 'cut'
+  AUDIO: 'audio',
+  VIDEO: 'video'
 };
 
 export const TASK_PRIORITY = {

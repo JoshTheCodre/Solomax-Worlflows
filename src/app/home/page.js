@@ -9,6 +9,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { TaskTable } from '@/components/TaskTable';
 import { TaskDetailPanel } from '@/components/TaskDetailPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { TASK_STATUS } from '@/lib/utils';
 
 export default function Home() {
@@ -77,10 +78,6 @@ export default function Home() {
         return filteredTasks.filter(task => 
           task.status === TASK_STATUS.ACTIVE || task.status === TASK_STATUS.IN_PROGRESS
         );
-      case 'in_progress':
-        return filteredTasks.filter(task => 
-          task.status === TASK_STATUS.IN_PROGRESS || task.status === TASK_STATUS.PENDING_APPROVAL
-        );
       case 'completed':
         return filteredTasks.filter(task => task.status === TASK_STATUS.COMPLETED);
       case 'due':
@@ -88,9 +85,42 @@ export default function Home() {
           const deadline = task.deadline.toDate();
           return deadline < now && task.status !== TASK_STATUS.COMPLETED;
         });
+      case 'reviews':
+        return filteredTasks.filter(task => 
+          task.status === TASK_STATUS.PENDING_APPROVAL || task.status === TASK_STATUS.REJECTED
+        );
       default:
         return filteredTasks;
     }
+  };
+
+  // Helper function to get task counts for badges
+  const getTaskCounts = () => {
+    if (!tasks) return { active: 0, completed: 0, due: 0, reviews: 0 };
+    
+    const now = new Date();
+    
+    const activeTasks = tasks.filter(task => 
+      task.status === TASK_STATUS.ACTIVE || task.status === TASK_STATUS.IN_PROGRESS
+    );
+    
+    const completedTasks = tasks.filter(task => task.status === TASK_STATUS.COMPLETED);
+    
+    const dueTasks = tasks.filter(task => {
+      const deadline = task.deadline.toDate();
+      return deadline < now && task.status !== TASK_STATUS.COMPLETED;
+    });
+    
+    const reviewTasks = tasks.filter(task => 
+      task.status === TASK_STATUS.PENDING_APPROVAL || task.status === TASK_STATUS.REJECTED
+    );
+    
+    return {
+      active: activeTasks.length,
+      completed: completedTasks.length,
+      due: dueTasks.length,
+      reviews: reviewTasks.length
+    };
   };
 
   return (
@@ -99,10 +129,38 @@ export default function Home() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList>
-            <TabsTrigger value="active">Active</TabsTrigger>
-            <TabsTrigger value="in_progress">In Progress</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
-            <TabsTrigger value="due">Due</TabsTrigger>
+            <TabsTrigger value="active">
+              Active
+              {getTaskCounts().active > 0 && (
+                <Badge className="ml-2 bg-blue-500 text-white hover:bg-blue-500">
+                  {getTaskCounts().active}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="completed">
+              Completed
+              {getTaskCounts().completed > 0 && (
+                <Badge className="ml-2 bg-green-500 text-white hover:bg-green-500">
+                  {getTaskCounts().completed}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="due">
+              Due
+              {getTaskCounts().due > 0 && (
+                <Badge className="ml-2 bg-red-500 text-white hover:bg-red-500">
+                  {getTaskCounts().due}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="reviews">
+              Reviews
+              {getTaskCounts().reviews > 0 && (
+                <Badge className="ml-2 bg-purple-500 text-white hover:bg-purple-500">
+                  {getTaskCounts().reviews}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab}>

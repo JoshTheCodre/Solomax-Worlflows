@@ -123,7 +123,7 @@ export const createTeamDataListener = (callback) => {
   const updateCombinedData = () => {
     const updatedUsersData = usersData.map(user => {
       const userTasks = tasksData.filter(task => task.assignee === user.email);
-      const activeTasks = userTasks.filter(task => task.status === 'active').length;
+      const activeTasks = userTasks.filter(task => task.status === 'active' || task.status === 'in_progress').length;
       
       return {
         ...user,

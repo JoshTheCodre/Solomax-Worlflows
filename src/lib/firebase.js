@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
 import { 
   getFirestore, 
   connectFirestoreEmulator,
@@ -26,7 +27,7 @@ const validateConfig = (config) => {
   }
 };
 
-let app, auth, db;
+let app, auth, db, storage;
 
 try {
   // Validate config
@@ -40,6 +41,7 @@ try {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
+  storage = getStorage(app);
 
   console.log('Firebase initialized successfully');
 } catch (error) {
@@ -47,7 +49,7 @@ try {
   throw error;
 }
 
-export { auth, db };
+export { auth, db, storage };
 
 
 export const CLOUDINARY_CLOUD_NAME = 'dgkgizgnv';

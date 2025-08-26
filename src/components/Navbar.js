@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { BellIcon, Settings, User, LogOut, Plus } from 'lucide-react';
 import useAuthStore from '@/lib/store';
+import useTaskStore from '@/store/taskStore';
 import { Button } from '@/components/ui/button';
-import { AddTaskModal } from './AddTaskModal';
+import { DragDropTaskButton } from './DragDropTaskButton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +21,7 @@ import { NotificationBell } from './NotificationBell';
 export default function Navbar() {
   console.log('Navbar rendering'); // Debug log
   const { user, logout } = useAuthStore();
+  const { addTask } = useTaskStore();
   const router = useRouter();
   const pathname = usePathname();
   
@@ -68,16 +70,14 @@ export default function Navbar() {
           </div>
         </div>
         <div className="ml-auto flex items-center space-x-4">
-          {/* Create Task Button - Only visible to admins */}
+          {/* Create Task Button with Drag & Drop - Only visible to admins */}
           {isAdmin && (
-            <AddTaskModal>
-              <Button size="sm" className="mr-2">
-                <Plus className="h-4 w-4 mr-1" /> New Task
-              </Button>
-            </AddTaskModal>
+            <DragDropTaskButton onSubmit={addTask}>
+              <Plus className="h-4 w-4" /> 
+              Create Task
+            </DragDropTaskButton>
           )}
-
-          {/* Notification Bell */}
+          {/* /* Notification Bell  */}
           <NotificationBell />
 
           <DropdownMenu>

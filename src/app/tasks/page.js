@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 import useAuthStore from '@/lib/store';
 import useTaskStore from '@/store/taskStore';
 import { EditTaskModal } from '@/components/EditTaskModal';
-import { AddTaskModal } from '@/components/AddTaskModal';
+import { DragDropTaskButton } from '@/components/DragDropTaskButton';
 
 export default function TasksPage() {
   const { user } = useAuthStore();
@@ -173,7 +173,7 @@ export default function TasksPage() {
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-semibold text-gray-900">Tasks</h1>
-            <AddTaskModal onSubmit={async (taskData) => {
+            <DragDropTaskButton onSubmit={async (taskData) => {
               try {
                 await useTaskStore.getState().addTask({
                   ...taskData,
@@ -190,8 +190,8 @@ export default function TasksPage() {
                 console.error('Error creating task:', error);
               }
             }}>
-              <Button>New Task</Button>
-            </AddTaskModal>
+              New Task
+            </DragDropTaskButton>
           </div>
           
           <Tabs defaultValue="all" className="w-full">

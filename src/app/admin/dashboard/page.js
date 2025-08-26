@@ -5,7 +5,6 @@ import useTaskStore from '@/store/taskStore';
 import useAuthStore from '@/lib/store';
 import { seedDummyTasks } from '@/lib/seed';
 import { TaskTable } from '@/components/TaskTable';
-import { AddTaskModal } from '@/components/AddTaskModal';
 import { TaskDetailPanel } from '@/components/TaskDetailPanel';
 import { ReviewTaskModal } from '@/components/ReviewTaskModal';
 import { TaskFilters } from '@/components/TaskFilters';
@@ -152,11 +151,11 @@ export default function AdminDashboard() {
     
     console.log('Calculating stats for tasks:', tasks.map(t => ({ id: t.id, title: t.title, status: t.status })));
     
-    // ACTIVE COUNT: Count tasks that have 'active' status (or no status, treated as active)
+    // ACTIVE COUNT: Count tasks that have 'active' or 'in_progress' status (or no status, treated as active)
     const activeCount = tasks.filter(t => {
       const taskStatus = String(t.status || '').trim().toLowerCase();
-      // Count tasks that are explicitly 'active' or have no status (treated as active)
-      return taskStatus === 'active' || taskStatus === '' || !t.status;
+      // Count tasks that are explicitly 'active', 'in_progress' or have no status (treated as active)
+      return taskStatus === 'active' || taskStatus === 'in_progress' || taskStatus === '' || !t.status;
     }).length;
     
     // COMPLETED COUNT: Count tasks that have 'completed' status
@@ -253,12 +252,12 @@ export default function AdminDashboard() {
             whileHover={{ scale: 1.02 }} 
             className="w-full cursor-pointer"
             onClick={() => {
-              console.log('Active Status card clicked - filtering by task status = "active"');
+              console.log('Active Status card clicked - filtering by task status = "active" (includes in_progress)');
               console.log('Current filterCriteria before change:', filterCriteria);
               
-              // Set filter criteria for active tasks
+              // Set filter criteria for active tasks (includes both active and in_progress)
               const newFilters = { status: TASK_STATUS.ACTIVE };
-              console.log('Setting filter to show tasks with active status:', newFilters);
+              console.log('Setting filter to show tasks with active status (includes in_progress):', newFilters);
               console.log('TASK_STATUS.ACTIVE value is:', TASK_STATUS.ACTIVE);
               
               // Clear search query and set new filter

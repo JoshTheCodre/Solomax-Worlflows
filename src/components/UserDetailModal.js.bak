@@ -113,7 +113,7 @@ export function UserDetailModal({ user, isOpen, onClose }) {
     
     const now = new Date();
     const completed = tasks.filter(t => t.status === TASK_STATUS.COMPLETED).length;
-    const active = tasks.filter(t => t.status === TASK_STATUS.ACTIVE).length;
+    const active = tasks.filter(t => t.status === TASK_STATUS.ACTIVE || t.status === TASK_STATUS.IN_PROGRESS).length;
     const overdue = tasks.filter(t => {
       if (!t.deadline || t.status === TASK_STATUS.COMPLETED) return false;
       const deadline = t.deadline.toDate ? t.deadline.toDate() : new Date(t.deadline);
