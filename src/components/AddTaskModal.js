@@ -172,7 +172,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <Card className="p-4 border-0 bg-white/80 backdrop-blur-sm shadow-lg">
+          <Card className=" bg-white/80">
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
