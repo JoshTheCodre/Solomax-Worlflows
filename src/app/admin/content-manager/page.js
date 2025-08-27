@@ -6,11 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectI  return (
-    <div className="p-6 min-h-screen bg-gray-50 antialiased" onClick={closeContextMenu} style={{ fontSmooth: 'always', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}>
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
-      
-      {/* Context Menu */}SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Calendar, Archive, LinkIcon, Undo2, FolderOpen, Video, FileText, Image } from 'lucide-react';
@@ -366,7 +362,7 @@ export default function ContentManagerPage() {
     return (
       <Card
         key={item.id}
-        className={`mb-1 cursor-grab hover:shadow-lg transition-all duration-300 bg-white border-0 shadow-sm border-l-2 ${channelBorderColor} relative h-12 ${
+        className={`mb-1 cursor-grab hover:shadow-xl transition-all duration-300 bg-white border-0 shadow-sm border-l ${channelBorderColor} relative h-10 ${
           isAnimating ? 'animate-pulse scale-50 opacity-20 transform translate-x-8 translate-y-4 rotate-12' : ''
         }`}
         draggable={isDraggable}
@@ -375,17 +371,17 @@ export default function ContentManagerPage() {
         onContextMenu={(e) => handleRightClick(e, item)}
       >
         {isDraggable && (
-          <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-gray-500 rounded-full"></div>
+          <div className="absolute top-0.5 right-0.5 w-0.5 h-0.5 bg-gray-600 rounded-full"></div>
         )}
         
         <div className="flex items-center justify-between h-full px-2 py-1">
           <div className="flex-1 min-w-0">
-            <h4 className="text-xs font-bold text-gray-900 truncate leading-tight antialiased" title={item.title}>
+            <h4 className="text-xs font-bold text-gray-900 truncate leading-none antialiased tracking-tight" title={item.title}>
               {item.title}
             </h4>
-            <div className="flex items-center gap-1 mt-0.5">
-              <Calendar className="w-2 h-2 text-gray-400 flex-shrink-0" />
-              <span className="text-xs font-medium text-gray-600 antialiased">
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <Calendar className="w-2.5 h-2.5 text-gray-600 flex-shrink-0" />
+              <span className="text-xs font-semibold text-gray-700 antialiased tracking-wide">
                 {formatDate(item.completedAt || item.createdAt)}
               </span>
             </div>
@@ -562,96 +558,112 @@ export default function ContentManagerPage() {
 
       {/* Posted Content Dialog */}
       <Dialog open={isPostedDialogOpen} onOpenChange={setIsPostedDialogOpen}>
-        <DialogContent className="sm:max-w-5xl max-h-[85vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <Archive className="w-6 h-6 text-blue-600" />
-              Posted Content ({postedContent.length})
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white">
+          <DialogHeader className="border-b border-gray-700 pb-4">
+            <DialogTitle className="flex items-center gap-3 text-2xl font-bold">
+              <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
+                <Archive className="w-6 h-6" />
+              </div>
+              <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                Posted Content
+              </span>
+              <div className="bg-white/10 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">
+                {postedContent.length}
+              </div>
             </DialogTitle>
           </DialogHeader>
           
-          <div className="overflow-y-auto max-h-[65vh] bg-gray-50 rounded-lg p-4">
+          <div className="overflow-y-auto max-h-[70vh] py-4">
             {postedContent.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Archive className="w-16 h-16 text-gray-300 mb-4" />
-                <h3 className="text-xl font-medium text-gray-700">No Posted Content</h3>
-                <p className="text-gray-500 text-sm mt-2">
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="p-6 bg-gray-800/50 rounded-full mb-6">
+                  <Archive className="w-16 h-16 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-300 mb-2">No Posted Content</h3>
+                <p className="text-gray-500 text-sm">
                   Content that has been posted will appear here
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {postedContent.map((content) => (
-                  <Card key={content.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200 bg-white">
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-sm font-semibold text-gray-900">{content.title}</CardTitle>
-                        <div className="flex gap-2">
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <div className="space-y-3">
+                {postedContent.map((content, index) => (
+                  <div 
+                    key={content.id} 
+                    className="group bg-gradient-to-r from-gray-800/50 via-gray-800/30 to-gray-800/50 hover:from-gray-700/60 hover:via-gray-700/40 hover:to-gray-700/60 border border-gray-700/50 hover:border-gray-600/50 rounded-xl p-4 transition-all duration-300 backdrop-blur-sm"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-2 h-2 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full animate-pulse"></div>
+                          <h4 className="text-lg font-bold text-white truncate group-hover:text-blue-200 transition-colors">
+                            {content.title}
+                          </h4>
+                          <Badge className="bg-green-500/20 text-green-300 border-green-500/30 text-xs">
                             Posted
                           </Badge>
                         </div>
-                      </div>
-                      {content.description && (
-                        <CardDescription className="text-xs line-clamp-2 text-gray-600">
-                          {content.description}
-                        </CardDescription>
-                      )}
-                    </CardHeader>
-                    <CardContent className="pt-0 pb-3">
-                      <div className="text-xs text-gray-500 space-y-2">
-                        {content.originalChannel && (
-                          <div className="flex items-center gap-2">
-                            <Video className="w-3 h-3 text-purple-500" />
-                            <span className="font-medium">Channel:</span>
-                            <span className="text-purple-600">
-                              {channels.find(ch => ch.id === content.originalChannel)?.name || content.originalChannel}
-                            </span>
-                          </div>
-                        )}
-                        {content.videoUrl && (
-                          <div className="flex items-center gap-2">
-                            <LinkIcon className="w-3 h-3 text-blue-500" />
-                            <a 
-                              href={content.videoUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-500 hover:underline truncate flex-1"
-                            >
-                              {content.videoUrl.length > 40 ? content.videoUrl.substring(0, 40) + '...' : content.videoUrl}
-                            </a>
-                          </div>
-                        )}
-                        {content.postedAt && (
-                          <div className="flex items-center gap-2 text-gray-400">
-                            <Calendar className="w-3 h-3" />
-                            <span>Posted: {formatDate(content.postedAt)}</span>
-                          </div>
-                        )}
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                          {content.originalChannel && (
+                            <div className="flex items-center gap-2 text-gray-300">
+                              <Video className="w-4 h-4 text-purple-400" />
+                              <span className="font-medium">Channel:</span>
+                              <span className="text-purple-300 font-semibold">
+                                {channels.find(ch => ch.id === content.originalChannel)?.name || content.originalChannel}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {content.postedAt && (
+                            <div className="flex items-center gap-2 text-gray-300">
+                              <Calendar className="w-4 h-4 text-blue-400" />
+                              <span className="font-medium">Posted:</span>
+                              <span className="text-blue-300 font-semibold">
+                                {formatDate(content.postedAt)}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {content.videoUrl && (
+                            <div className="flex items-center gap-2 text-gray-300">
+                              <LinkIcon className="w-4 h-4 text-indigo-400" />
+                              <a 
+                                href={content.videoUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-indigo-300 hover:text-indigo-200 truncate font-semibold underline underline-offset-2"
+                              >
+                                View Video
+                              </a>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       
-                      {/* Undo Button */}
-                      <div className="mt-3 pt-2 border-t border-gray-100">
+                      <div className="ml-4">
                         <Button
                           size="sm"
-                          variant="outline"
                           onClick={() => undoPostedContent(content)}
                           disabled={isSubmitting}
-                          className="w-full flex items-center gap-2 text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300"
+                          className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2"
                         >
-                          <Undo2 className="w-3 h-3" />
-                          {isSubmitting ? 'Restoring...' : 'Undo Posted'}
+                          <Undo2 className="w-4 h-4 mr-2" />
+                          {isSubmitting ? 'Restoring...' : 'Undo'}
                         </Button>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPostedDialogOpen(false)}>
+          <DialogFooter className="border-t border-gray-700 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsPostedDialogOpen(false)}
+              className="bg-gray-800/50 border-gray-600 text-gray-300 hover:bg-gray-700/50 hover:text-white"
+            >
               Close
             </Button>
           </DialogFooter>
