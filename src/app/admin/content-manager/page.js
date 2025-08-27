@@ -246,20 +246,14 @@ export default function ContentManagerPage() {
   }
 
   async function handleSubmit() {
-    if (!videoUrl) {
-      toast.error('Please enter a video URL');
-      return;
-    }
-
     setIsSubmitting(true);
     
     try {
       // Store original channel for potential restore
       const originalChannel = selectedContent.assignedChannel;
       
-      // Update the task with video URL and mark as posted
+      // Update the task and mark as posted
       await updateDoc(doc(db, 'tasks', selectedContent.id), {
-        videoUrl: videoUrl,
         videoPosted: true,
         postedAt: new Date(),
         originalChannel: originalChannel // Store for restore functionality
@@ -319,14 +313,13 @@ export default function ContentManagerPage() {
   }
 
   async function moveToPostedFromContext(item) {
-    const videoUrl = prompt('Enter video URL for this content:');
-    if (!videoUrl) return;
+    const confirmed = confirm(`Mark "${item.title}" as posted?`);
+    if (!confirmed) return;
 
     try {
       setIsSubmitting(true);
       
       await updateDoc(doc(db, 'tasks', item.id), {
-        videoUrl: videoUrl,
         videoPosted: true,
         postedAt: new Date(),
         originalChannel: item.assignedChannel
@@ -362,7 +355,7 @@ export default function ContentManagerPage() {
     return (
       <Card
         key={item.id}
-        className={`mb-1 cursor-grab hover:shadow-xl transition-all duration-300 bg-white border-0 shadow-sm border-l ${channelBorderColor} relative h-10 ${
+        className={`mb-1 cursor-grab hover:shadow-xl transition-all duration-300 bg-white border-0 shadow-sm border-l-4 ${channelBorderColor} relative h-10 rounded-md ${
           isAnimating ? 'animate-pulse scale-50 opacity-20 transform translate-x-8 translate-y-4 rotate-12' : ''
         }`}
         draggable={isDraggable}
@@ -371,7 +364,10 @@ export default function ContentManagerPage() {
         onContextMenu={(e) => handleRightClick(e, item)}
       >
         {isDraggable && (
-          <div className="absolute top-0.5 right-0.5 w-0.5 h-0.5 bg-gray-600 rounded-full"></div>
+          <div className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full animate-ping opacity-75"></div>
+        )}
+        {isDraggable && (
+          <div className="absolute top-1 right-1 w-2 h-2 bg-blue-600 rounded-full"></div>
         )}
         
         <div className="flex items-center justify-between h-full px-2 py-1">
@@ -379,7 +375,7 @@ export default function ContentManagerPage() {
             <h4 className="text-xs font-bold text-gray-900 truncate leading-none antialiased tracking-tight" title={item.title}>
               {item.title}
             </h4>
-            <div className="flex items-center gap-1.5 mt-0.5">
+            <div className="flex items-center gap-1.5 mt-1">
               <Calendar className="w-2.5 h-2.5 text-gray-600 flex-shrink-0" />
               <span className="text-xs font-semibold text-gray-700 antialiased tracking-wide">
                 {formatDate(item.completedAt || item.createdAt)}
@@ -512,45 +508,37 @@ export default function ContentManagerPage() {
         ))}
       </div>
 
-      {/* Video Details Dialog */}
+      {/* Content Details Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-white">
           <DialogHeader>
-            <DialogTitle>Add Video Details</DialogTitle>
+            <DialogTitle className="text-slate-800 font-bold">Mark as Posted</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4 py-2">
-            <div>
-              <Label htmlFor="title" className="text-sm font-medium text-gray-500">
+          <div className="space-y-4 py-4">
+            <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <Label className="text-sm font-medium text-slate-600">
                 Content Title
               </Label>
-              <div className="text-base font-medium mt-1">{selectedContent?.title}</div>
+              <div className="text-lg font-bold mt-1 text-slate-800">{selectedContent?.title}</div>
             </div>
-
-            <div>
-              <Label htmlFor="videoUrl" className="text-sm font-medium text-gray-500">
-                Video URL
-              </Label>
-              <Input
-                id="videoUrl"
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="https://youtube.com/watch?v="
-                className="mt-1"
-              />
-            </div>
+            
+            <p className="text-sm text-slate-600">
+              Are you sure you want to mark this content as posted? This will move it to the posted content archive.
+            </p>
           </div>
 
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsDetailOpen(false)}>
+            <Button variant="ghost" onClick={() => setIsDetailOpen(false)} className="text-slate-600 hover:text-slate-800">
               Cancel
             </Button>
             <Button 
               variant="default" 
               onClick={handleSubmit} 
-              disabled={isSubmitting || !videoUrl}
+              disabled={isSubmitting}
+              className="bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white"
             >
-              {isSubmitting ? 'Saving...' : 'Mark as Posted'}
+              {isSubmitting ? 'Marking as Posted...' : 'Mark as Posted'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -558,16 +546,16 @@ export default function ContentManagerPage() {
 
       {/* Posted Content Dialog */}
       <Dialog open={isPostedDialogOpen} onOpenChange={setIsPostedDialogOpen}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white">
-          <DialogHeader className="border-b border-gray-700 pb-4">
-            <DialogTitle className="flex items-center gap-3 text-2xl font-bold">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
-                <Archive className="w-6 h-6" />
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] bg-white">
+          <DialogHeader className="border-b border-gray-200 pb-4">
+            <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-gray-800">
+              <div className="p-2 bg-gradient-to-r from-slate-600 to-slate-700 rounded-lg">
+                <Archive className="w-6 h-6 text-white" />
               </div>
-              <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+              <span className="text-slate-800">
                 Posted Content
               </span>
-              <div className="bg-white/10 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">
+              <div className="bg-slate-100 px-3 py-1 rounded-full text-sm font-medium text-slate-700">
                 {postedContent.length}
               </div>
             </DialogTitle>
@@ -576,10 +564,10 @@ export default function ContentManagerPage() {
           <div className="overflow-y-auto max-h-[70vh] py-4">
             {postedContent.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16">
-                <div className="p-6 bg-gray-800/50 rounded-full mb-6">
+                <div className="p-6 bg-gray-100 rounded-full mb-6">
                   <Archive className="w-16 h-16 text-gray-400" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-300 mb-2">No Posted Content</h3>
+                <h3 className="text-xl font-bold text-gray-600 mb-2">No Posted Content</h3>
                 <p className="text-gray-500 text-sm">
                   Content that has been posted will appear here
                 </p>
@@ -589,52 +577,37 @@ export default function ContentManagerPage() {
                 {postedContent.map((content, index) => (
                   <div 
                     key={content.id} 
-                    className="group bg-gradient-to-r from-gray-800/50 via-gray-800/30 to-gray-800/50 hover:from-gray-700/60 hover:via-gray-700/40 hover:to-gray-700/60 border border-gray-700/50 hover:border-gray-600/50 rounded-xl p-4 transition-all duration-300 backdrop-blur-sm"
+                    className="group bg-gradient-to-r from-slate-50 via-gray-50 to-slate-50 hover:from-slate-100 hover:via-gray-100 hover:to-slate-100 border border-gray-200 hover:border-gray-300 rounded-lg p-4 transition-all duration-300"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-2 h-2 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full animate-pulse"></div>
-                          <h4 className="text-lg font-bold text-white truncate group-hover:text-blue-200 transition-colors">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-2 h-2 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full"></div>
+                          <h4 className="text-lg font-bold text-slate-800 truncate group-hover:text-slate-700 transition-colors">
                             {content.title}
                           </h4>
-                          <Badge className="bg-green-500/20 text-green-300 border-green-500/30 text-xs">
+                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs">
                             Posted
                           </Badge>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                           {content.originalChannel && (
-                            <div className="flex items-center gap-2 text-gray-300">
-                              <Video className="w-4 h-4 text-purple-400" />
+                            <div className="flex items-center gap-2 text-slate-600">
                               <span className="font-medium">Channel:</span>
-                              <span className="text-purple-300 font-semibold">
+                              <span className="text-slate-700 font-semibold">
                                 {channels.find(ch => ch.id === content.originalChannel)?.name || content.originalChannel}
                               </span>
                             </div>
                           )}
                           
                           {content.postedAt && (
-                            <div className="flex items-center gap-2 text-gray-300">
-                              <Calendar className="w-4 h-4 text-blue-400" />
+                            <div className="flex items-center gap-2 text-slate-600">
+                              <Calendar className="w-4 h-4 text-slate-500" />
                               <span className="font-medium">Posted:</span>
-                              <span className="text-blue-300 font-semibold">
+                              <span className="text-slate-700 font-semibold">
                                 {formatDate(content.postedAt)}
                               </span>
-                            </div>
-                          )}
-                          
-                          {content.videoUrl && (
-                            <div className="flex items-center gap-2 text-gray-300">
-                              <LinkIcon className="w-4 h-4 text-indigo-400" />
-                              <a 
-                                href={content.videoUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-indigo-300 hover:text-indigo-200 truncate font-semibold underline underline-offset-2"
-                              >
-                                View Video
-                              </a>
                             </div>
                           )}
                         </div>
@@ -645,7 +618,7 @@ export default function ContentManagerPage() {
                           size="sm"
                           onClick={() => undoPostedContent(content)}
                           disabled={isSubmitting}
-                          className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 px-4 py-2"
+                          className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white border-0 shadow-md hover:shadow-lg transition-all duration-300 px-4 py-2"
                         >
                           <Undo2 className="w-4 h-4 mr-2" />
                           {isSubmitting ? 'Restoring...' : 'Undo'}
@@ -658,11 +631,11 @@ export default function ContentManagerPage() {
             )}
           </div>
 
-          <DialogFooter className="border-t border-gray-700 pt-4">
+          <DialogFooter className="border-t border-gray-200 pt-4">
             <Button 
               variant="outline" 
               onClick={() => setIsPostedDialogOpen(false)}
-              className="bg-gray-800/50 border-gray-600 text-gray-300 hover:bg-gray-700/50 hover:text-white"
+              className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-800"
             >
               Close
             </Button>
