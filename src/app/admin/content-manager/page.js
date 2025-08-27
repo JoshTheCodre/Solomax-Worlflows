@@ -296,16 +296,14 @@ export default function ContentManagerPage() {
     }
   }
 
-  // Context menu handlers - simplified to direct action
+  // Context menu handlers - show dialog on right-click
   function handleRightClick(e, item) {
     e.preventDefault();
-    moveToPostedFromContext(item);
+    setSelectedContent(item);
+    setIsDetailOpen(true);
   }
 
   async function moveToPostedFromContext(item) {
-    const confirmed = confirm(`Mark "${item.title}" as posted?`);
-    if (!confirmed) return;
-
     try {
       setIsSubmitting(true);
       
@@ -316,6 +314,7 @@ export default function ContentManagerPage() {
       });
 
       toast.success('Content moved to posted');
+      setIsDetailOpen(false);
       fetchContent();
       
     } catch (error) {
@@ -344,12 +343,11 @@ export default function ContentManagerPage() {
     return (
       <Card
         key={item.id}
-        className={`mb-1 cursor-grab hover:shadow-xl transition-all duration-300 bg-white border-0 shadow-sm border-l-4 ${channelBorderColor} relative h-10 rounded-md ${
-          isAnimating ? 'animate-pulse scale-50 opacity-20 transform translate-x-8 translate-y-4 rotate-12' : ''
+        className={`flex justify-center align-middle mb-1 bg-blue-700 cursor-grab hover:shadow-xl transition-all duration-300 bg-white border-0 shadow-sm border-l-4  ${channelBorderColor} relative h-14 rounded-md ${
+          isAnimating ? 'animate-pulse scale-50 opacity-20 transform translate-x-8 translate-y-2 rotate-12' : ''
         }`}
         draggable={isDraggable}
         onDragStart={(e) => handleDragStart(e, item)}
-        onClick={() => openDetailDialog(item)}
         onContextMenu={(e) => handleRightClick(e, item)}
       >
         {isDraggable && (
@@ -359,12 +357,12 @@ export default function ContentManagerPage() {
           <div className="absolute top-1 right-1 w-2 h-2 bg-blue-600 rounded-full"></div>
         )}
         
-        <div className="flex flex-col justify-start h-full px-2 py-0.5">
-          <h4 className="text-xs font-bold text-gray-900 truncate leading-none antialiased tracking-tight mt-0.5" title={item.title}>
+       <div className="flex flex-col justify-start py-2 gap-1  px-2 bg-500">
+          <h4 className="text-xs font-bold  " title={item.title}>
             {item.title}
           </h4>
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <Calendar className="w-2.5 h-2.5 text-gray-600 flex-shrink-0" />
+          <div className="flex items-center gap-1.5 ">
+            <Calendar className="w-3 h-3 text-gray-600 flex-shrink-0" />
             <span className="text-xs font-semibold text-gray-700 antialiased tracking-wide">
               {formatDate(item.completedAt || item.createdAt)}
             </span>
@@ -375,7 +373,7 @@ export default function ContentManagerPage() {
   }
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50 antialiased" style={{ fontSmooth: 'always', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}>
+    <div className=" min-h-screen bg-gray-50 antialiased" style={{ fontSmooth: 'always', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       
       {/* Header */}
@@ -478,37 +476,73 @@ export default function ContentManagerPage() {
         ))}
       </div>
 
-      {/* Content Details Dialog */}
+      {/* Task Details Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="sm:max-w-md bg-white">
+        <DialogContent className="sm:max-w-lg bg-white">
           <DialogHeader>
-            <DialogTitle className="text-slate-800 font-bold">Mark as Posted</DialogTitle>
+            <DialogTitle className="text-slate-800 font-bold text-xl">Task Details</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
               <Label className="text-sm font-medium text-slate-600">
-                Content Title
+                Task Title
               </Label>
               <div className="text-lg font-bold mt-1 text-slate-800">{selectedContent?.title}</div>
             </div>
             
-            <p className="text-sm text-slate-600">
-              Are you sure you want to mark this content as posted? This will move it to the posted content archive.
-            </p>
+            {selectedContent?.description && (
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <Label className="text-sm font-medium text-slate-600">
+                  Description
+                </Label>
+                <div className="text-sm mt-1 text-slate-700">{selectedContent.description}</div>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <Label className="text-xs font-medium text-blue-600">
+                  Status
+                </Label>
+                <div className="text-sm font-semibold mt-1 text-blue-800">
+                  {selectedContent?.status || 'Completed'}
+                </div>
+              </div>
+              
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <Label className="text-xs font-medium text-green-600">
+                  Completed
+                </Label>
+                <div className="text-sm font-semibold mt-1 text-green-800">
+                  {selectedContent && formatDate(selectedContent.completedAt || selectedContent.createdAt)}
+                </div>
+              </div>
+            </div>
+            
+            {selectedContent?.assignedChannel && (
+              <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                <Label className="text-xs font-medium text-purple-600">
+                  Current Channel
+                </Label>
+                <div className="text-sm font-semibold mt-1 text-purple-800">
+                  {channels.find(ch => ch.id === selectedContent.assignedChannel)?.name || selectedContent.assignedChannel}
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsDetailOpen(false)} className="text-slate-600 hover:text-slate-800">
-              Cancel
+              Close
             </Button>
             <Button 
               variant="default" 
-              onClick={handleSubmit} 
+              onClick={() => moveToPostedFromContext(selectedContent)} 
               disabled={isSubmitting}
-              className="bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white"
+              className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
             >
-              {isSubmitting ? 'Marking as Posted...' : 'Mark as Posted'}
+              {isSubmitting ? 'Moving to Posted...' : 'Move to Posted'}
             </Button>
           </DialogFooter>
         </DialogContent>
