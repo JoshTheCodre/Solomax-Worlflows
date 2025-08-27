@@ -32,7 +32,6 @@ export default function ContentManagerPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [draggedItem, setDraggedItem] = useState(null);
   const [animatingCard, setAnimatingCard] = useState(null);
-  const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0, item: null });
   const router = useRouter();
 
   const channels = [
@@ -297,19 +296,10 @@ export default function ContentManagerPage() {
     }
   }
 
-  // Context menu handlers
+  // Context menu handlers - simplified to direct action
   function handleRightClick(e, item) {
     e.preventDefault();
-    setContextMenu({
-      show: true,
-      x: e.clientX,
-      y: e.clientY,
-      item: item
-    });
-  }
-
-  function closeContextMenu() {
-    setContextMenu({ show: false, x: 0, y: 0, item: null });
+    moveToPostedFromContext(item);
   }
 
   async function moveToPostedFromContext(item) {
@@ -333,7 +323,6 @@ export default function ContentManagerPage() {
       toast.error('Failed to move content');
     } finally {
       setIsSubmitting(false);
-      closeContextMenu();
     }
   }
 
@@ -370,17 +359,15 @@ export default function ContentManagerPage() {
           <div className="absolute top-1 right-1 w-2 h-2 bg-blue-600 rounded-full"></div>
         )}
         
-        <div className="flex items-center justify-between h-full px-2 py-1">
-          <div className="flex-1 min-w-0">
-            <h4 className="text-xs font-bold text-gray-900 truncate leading-none antialiased tracking-tight" title={item.title}>
-              {item.title}
-            </h4>
-            <div className="flex items-center gap-1.5 mt-1">
-              <Calendar className="w-2.5 h-2.5 text-gray-600 flex-shrink-0" />
-              <span className="text-xs font-semibold text-gray-700 antialiased tracking-wide">
-                {formatDate(item.completedAt || item.createdAt)}
-              </span>
-            </div>
+        <div className="flex flex-col justify-start h-full px-2 py-0.5">
+          <h4 className="text-xs font-bold text-gray-900 truncate leading-none antialiased tracking-tight mt-0.5" title={item.title}>
+            {item.title}
+          </h4>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <Calendar className="w-2.5 h-2.5 text-gray-600 flex-shrink-0" />
+            <span className="text-xs font-semibold text-gray-700 antialiased tracking-wide">
+              {formatDate(item.completedAt || item.createdAt)}
+            </span>
           </div>
         </div>
       </Card>
@@ -388,25 +375,8 @@ export default function ContentManagerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" onClick={closeContextMenu}>
+    <div className="p-6 min-h-screen bg-gray-50 antialiased" style={{ fontSmooth: 'always', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
-      
-      {/* Context Menu */}
-      {contextMenu.show && (
-        <div 
-          className="fixed bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-            onClick={() => moveToPostedFromContext(contextMenu.item)}
-          >
-            <Archive className="w-4 h-4" />
-            Move to Posted Content
-          </button>
-        </div>
-      )}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
