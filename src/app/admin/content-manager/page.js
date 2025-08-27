@@ -6,7 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectI  return (
+    <div className="p-6 min-h-screen bg-gray-50 antialiased" onClick={closeContextMenu} style={{ fontSmooth: 'always', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}>
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+      
+      {/* Context Menu */}SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Calendar, Archive, LinkIcon, Undo2, FolderOpen, Video, FileText, Image } from 'lucide-react';
@@ -154,18 +158,24 @@ export default function ContentManagerPage() {
     
     if (!draggedItem) return;
 
-    // Enhanced portal animation effect for dropping to posted
+    // Enhanced portal swallowing animation
     setAnimatingCard(draggedItem.id);
     
-    // Create a visual portal effect
+    // Portal effect on button
     const buttonElement = e.currentTarget;
-    buttonElement.classList.add('ring-8', 'ring-purple-400', 'ring-opacity-50');
+    buttonElement.classList.add('scale-150', 'ring-8', 'ring-purple-500', 'ring-opacity-75', 'shadow-2xl', 'shadow-purple-500/50');
+    buttonElement.classList.remove('scale-125', 'ring-4', 'ring-purple-400', 'ring-opacity-75');
     
-    // Portal animation duration
+    // Swallowing animation sequence
+    setTimeout(() => {
+      buttonElement.classList.remove('scale-150', 'ring-8', 'ring-purple-500', 'ring-opacity-75');
+      buttonElement.classList.add('scale-90');
+    }, 200);
+    
     setTimeout(() => {
       setAnimatingCard(null);
-      buttonElement.classList.remove('ring-8', 'ring-purple-400', 'ring-opacity-50');
-    }, 800);
+      buttonElement.classList.remove('scale-90', 'shadow-2xl', 'shadow-purple-500/50');
+    }, 600);
 
     // Check if item is being restored from Posted back to a channel
     if (draggedItem.videoPosted) {
@@ -356,8 +366,8 @@ export default function ContentManagerPage() {
     return (
       <Card
         key={item.id}
-        className={`mb-1.5 cursor-grab hover:shadow-md transition-all duration-200 bg-white border-0 shadow-sm border-l-2 ${channelBorderColor} relative ${
-          isAnimating ? 'animate-pulse scale-75 opacity-30 transform translate-x-4 translate-y-2' : ''
+        className={`mb-1 cursor-grab hover:shadow-lg transition-all duration-300 bg-white border-0 shadow-sm border-l-2 ${channelBorderColor} relative h-12 ${
+          isAnimating ? 'animate-pulse scale-50 opacity-20 transform translate-x-8 translate-y-4 rotate-12' : ''
         }`}
         draggable={isDraggable}
         onDragStart={(e) => handleDragStart(e, item)}
@@ -365,21 +375,22 @@ export default function ContentManagerPage() {
         onContextMenu={(e) => handleRightClick(e, item)}
       >
         {isDraggable && (
-          <div className="absolute top-1 right-1 w-1 h-1 bg-gray-400 rounded-full"></div>
+          <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-gray-500 rounded-full"></div>
         )}
         
-        <CardHeader className="pb-0.5 pt-1.5 px-2">
-          <CardTitle className="text-xs font-medium truncate pr-3 leading-tight" title={item.title}>
-            {item.title}
-          </CardTitle>
-        </CardHeader>
-        
-        <CardContent className="pt-0 pb-1 px-2">
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <Calendar className="w-2.5 h-2.5" />
-            <span className="text-xs">{formatDate(item.completedAt || item.createdAt)}</span>
+        <div className="flex items-center justify-between h-full px-2 py-1">
+          <div className="flex-1 min-w-0">
+            <h4 className="text-xs font-bold text-gray-900 truncate leading-tight antialiased" title={item.title}>
+              {item.title}
+            </h4>
+            <div className="flex items-center gap-1 mt-0.5">
+              <Calendar className="w-2 h-2 text-gray-400 flex-shrink-0" />
+              <span className="text-xs font-medium text-gray-600 antialiased">
+                {formatDate(item.completedAt || item.createdAt)}
+              </span>
+            </div>
           </div>
-        </CardContent>
+        </div>
       </Card>
     );
   }
@@ -415,17 +426,29 @@ export default function ContentManagerPage() {
           <Button
             variant="default"
             onClick={openPostedDialog}
-            className={`flex items-center gap-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 hover:from-indigo-700 hover:via-purple-700 hover:to-blue-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300 px-8 py-3 font-bold text-lg border-2 border-white/20 rounded-xl transform hover:scale-105 ${
-              draggedItem ? 'ring-4 ring-purple-300 ring-opacity-75 animate-bounce' : ''
+            className={`group relative overflow-hidden flex items-center gap-2 bg-gradient-to-r from-slate-800 via-slate-900 to-black hover:from-slate-900 hover:via-black hover:to-slate-800 text-white shadow-2xl hover:shadow-3xl transition-all duration-500 px-4 py-2 font-bold text-sm border border-slate-600 rounded-lg transform hover:scale-110 backdrop-blur-sm ${
+              draggedItem ? 'scale-125 ring-4 ring-purple-400 ring-opacity-60 shadow-purple-500/50' : ''
             }`}
-            onDragOver={handleDragOver}
+            onDragOver={(e) => {
+              handleDragOver(e);
+              e.currentTarget.classList.add('scale-125', 'ring-4', 'ring-purple-400', 'ring-opacity-75');
+            }}
+            onDragLeave={(e) => {
+              e.currentTarget.classList.remove('scale-125', 'ring-4', 'ring-purple-400', 'ring-opacity-75');
+            }}
             onDrop={handleDropToPosted}
           >
-            <Archive className="w-6 h-6" />
-            <span>Posted Content</span>
-            <div className="bg-white/20 px-2 py-1 rounded-full text-sm font-medium">
+            {/* Animated background overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            
+            <Archive className="w-4 h-4 relative z-10 group-hover:rotate-12 transition-transform duration-300" />
+            <span className="relative z-10 font-semibold">Posted</span>
+            <div className="bg-white/20 px-1.5 py-0.5 rounded-full text-xs font-bold relative z-10 backdrop-blur-sm">
               {postedContent.length}
             </div>
+            
+            {/* Portal effect ring */}
+            <div className="absolute inset-0 rounded-lg border-2 border-purple-400/0 group-hover:border-purple-400/50 transition-all duration-300"></div>
           </Button>
         </div>
       </div>
