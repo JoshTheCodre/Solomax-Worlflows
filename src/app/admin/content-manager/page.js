@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Calendar, Archive, LinkIcon } from 'lucide-react';
+import { Calendar, Archive, LinkIcon, Undo2, FolderOpen, Video, FileText, Image } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { getFirestore, collection, query, where, getDocs, doc, updateDoc, orderBy } from 'firebase/firestore';
@@ -31,14 +31,16 @@ export default function ContentManagerPage() {
   const [videoUrl, setVideoUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [draggedItem, setDraggedItem] = useState(null);
+  const [animatingCard, setAnimatingCard] = useState(null);
+  const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0, item: null });
   const router = useRouter();
 
   const channels = [
-    { id: 'epic-toons', name: 'EpicToons', color: 'bg-purple-500 text-white', borderColor: 'border-l-purple-500' },
-    { id: 'alpha-recap', name: 'Alpha Recap', color: 'bg-blue-500 text-white', borderColor: 'border-l-blue-500' },
-    { id: 'animation-ff', name: 'Animation FF', color: 'bg-green-500 text-white', borderColor: 'border-l-green-500' },
-    { id: 'super-recap', name: 'Super Recap', color: 'bg-red-500 text-white', borderColor: 'border-l-red-500' },
-    { id: 'beta-recap', name: 'Beta Recap', color: 'bg-amber-500 text-white', borderColor: 'border-l-amber-500' }
+    { id: 'epic-toons', name: 'EpicToons', color: 'bg-gradient-to-r from-purple-500 to-purple-600 text-white', borderColor: 'border-l-purple-500' },
+    { id: 'alpha-recap', name: 'Alpha Recap', color: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white', borderColor: 'border-l-blue-500' },
+    { id: 'animation-ff', name: 'Animation FF', color: 'bg-gradient-to-r from-green-500 to-green-600 text-white', borderColor: 'border-l-green-500' },
+    { id: 'super-recap', name: 'Super Recap', color: 'bg-gradient-to-r from-red-500 to-red-600 text-white', borderColor: 'border-l-red-500' },
+    { id: 'beta-recap', name: 'Beta Recap', color: 'bg-gradient-to-r from-amber-500 to-amber-600 text-white', borderColor: 'border-l-amber-500' }
   ];
 
   useEffect(() => {
@@ -152,6 +154,19 @@ export default function ContentManagerPage() {
     
     if (!draggedItem) return;
 
+    // Enhanced portal animation effect for dropping to posted
+    setAnimatingCard(draggedItem.id);
+    
+    // Create a visual portal effect
+    const buttonElement = e.currentTarget;
+    buttonElement.classList.add('ring-8', 'ring-purple-400', 'ring-opacity-50');
+    
+    // Portal animation duration
+    setTimeout(() => {
+      setAnimatingCard(null);
+      buttonElement.classList.remove('ring-8', 'ring-purple-400', 'ring-opacity-50');
+    }, 800);
+
     // Check if item is being restored from Posted back to a channel
     if (draggedItem.videoPosted) {
       // Instant UI update for restore operation
@@ -258,37 +273,111 @@ export default function ContentManagerPage() {
     }
   }
 
-  // Format date helper
+  // Undo posted content function
+  async function undoPostedContent(item) {
+    try {
+      setIsSubmitting(true);
+      
+      // Update Firebase to restore content
+      await updateDoc(doc(db, 'tasks', item.id), {
+        videoPosted: false,
+        assignedChannel: item.originalChannel || null,
+        postedAt: null
+      });
+
+      // Update UI
+      updateUIAfterRestore(item);
+      toast.success('Content restored successfully');
+      
+    } catch (error) {
+      console.error('Error undoing posted content:', error);
+      toast.error('Failed to restore content');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  // Context menu handlers
+  function handleRightClick(e, item) {
+    e.preventDefault();
+    setContextMenu({
+      show: true,
+      x: e.clientX,
+      y: e.clientY,
+      item: item
+    });
+  }
+
+  function closeContextMenu() {
+    setContextMenu({ show: false, x: 0, y: 0, item: null });
+  }
+
+  async function moveToPostedFromContext(item) {
+    const videoUrl = prompt('Enter video URL for this content:');
+    if (!videoUrl) return;
+
+    try {
+      setIsSubmitting(true);
+      
+      await updateDoc(doc(db, 'tasks', item.id), {
+        videoUrl: videoUrl,
+        videoPosted: true,
+        postedAt: new Date(),
+        originalChannel: item.assignedChannel
+      });
+
+      toast.success('Content moved to posted');
+      fetchContent();
+      
+    } catch (error) {
+      console.error('Error moving to posted:', error);
+      toast.error('Failed to move content');
+    } finally {
+      setIsSubmitting(false);
+      closeContextMenu();
+    }
+  }
+
+  // Format date helper - Updated to MM/DD/YY format
   function formatDate(timestamp) {
     if (!timestamp) return 'No date';
     const date = timestamp.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString('en-US', { 
+      month: '2-digit', 
+      day: '2-digit', 
+      year: '2-digit' 
+    });
   }
 
   // Render content card component
   function ContentCard({ item, isDraggable = true, channelBorderColor = 'border-l-gray-300' }) {
+    const isAnimating = animatingCard === item.id;
+    
     return (
       <Card
         key={item.id}
-        className={`mb-2 cursor-grab hover:shadow-md transition-all duration-200 bg-white border-0 shadow-sm border-l-4 ${channelBorderColor} relative`}
+        className={`mb-1.5 cursor-grab hover:shadow-md transition-all duration-200 bg-white border-0 shadow-sm border-l-2 ${channelBorderColor} relative ${
+          isAnimating ? 'animate-pulse scale-75 opacity-30 transform translate-x-4 translate-y-2' : ''
+        }`}
         draggable={isDraggable}
         onDragStart={(e) => handleDragStart(e, item)}
         onClick={() => openDetailDialog(item)}
+        onContextMenu={(e) => handleRightClick(e, item)}
       >
         {isDraggable && (
-          <div className="absolute top-2 right-2 w-2 h-2 bg-gray-400 rounded-full"></div>
+          <div className="absolute top-1 right-1 w-1 h-1 bg-gray-400 rounded-full"></div>
         )}
         
-        <CardHeader className="pb-1 pt-3">
-          <CardTitle className="text-sm font-semibold truncate pr-4" title={item.title}>
+        <CardHeader className="pb-0.5 pt-1.5 px-2">
+          <CardTitle className="text-xs font-medium truncate pr-3 leading-tight" title={item.title}>
             {item.title}
           </CardTitle>
         </CardHeader>
         
-        <CardContent className="pt-0 pb-3">
+        <CardContent className="pt-0 pb-1 px-2">
           <div className="flex items-center gap-1 text-xs text-gray-500">
-            <Calendar className="w-3 h-3" />
-            <span>{formatDate(item.completedAt || item.createdAt)}</span>
+            <Calendar className="w-2.5 h-2.5" />
+            <span className="text-xs">{formatDate(item.completedAt || item.createdAt)}</span>
           </div>
         </CardContent>
       </Card>
@@ -296,8 +385,25 @@ export default function ContentManagerPage() {
   }
 
   return (
-    <div className=" min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" onClick={closeContextMenu}>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+      
+      {/* Context Menu */}
+      {contextMenu.show && (
+        <div 
+          className="fixed bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+            onClick={() => moveToPostedFromContext(contextMenu.item)}
+          >
+            <Archive className="w-4 h-4" />
+            Move to Posted Content
+          </button>
+        </div>
+      )}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -309,12 +415,17 @@ export default function ContentManagerPage() {
           <Button
             variant="default"
             onClick={openPostedDialog}
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6 py-2.5 font-semibold"
+            className={`flex items-center gap-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 hover:from-indigo-700 hover:via-purple-700 hover:to-blue-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300 px-8 py-3 font-bold text-lg border-2 border-white/20 rounded-xl transform hover:scale-105 ${
+              draggedItem ? 'ring-4 ring-purple-300 ring-opacity-75 animate-bounce' : ''
+            }`}
             onDragOver={handleDragOver}
             onDrop={handleDropToPosted}
           >
-            <Archive className="w-5 h-5" />
-            Posted Content ({postedContent.length})
+            <Archive className="w-6 h-6" />
+            <span>Posted Content</span>
+            <div className="bg-white/20 px-2 py-1 rounded-full text-sm font-medium">
+              {postedContent.length}
+            </div>
           </Button>
         </div>
       </div>
@@ -328,14 +439,14 @@ export default function ContentManagerPage() {
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, null)}
         >
-          <div className="p-3 border-b border-gray-100 bg-gray-600 text-white rounded-t-lg">
+          <div className="p-3 border-b border-gray-100 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-t-lg">
             <h3 className="font-semibold whitespace-nowrap">Available Content</h3>
             <p className="text-xs opacity-80 mt-1">{availableContent.length} items</p>
           </div>
           <div className="flex-1 p-2 overflow-y-auto">
             {availableContent.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="w-8 h-8 bg-gray-200 rounded mb-2"></div>
+                <FolderOpen className="w-8 h-8 text-gray-300 mb-2" />
                 <p className="text-sm text-gray-500">No available content</p>
               </div>
             ) : (
@@ -365,7 +476,7 @@ export default function ContentManagerPage() {
             <div className="flex-1 p-2 overflow-y-auto">
               {channelContent[channel.id].length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <div className="w-8 h-8 bg-gray-200 rounded mb-2"></div>
+                  <Video className="w-8 h-8 text-gray-300 mb-2" />
                   <p className="text-sm text-gray-500">Drop content here</p>
                 </div>
               ) : (
@@ -428,44 +539,51 @@ export default function ContentManagerPage() {
 
       {/* Posted Content Dialog */}
       <Dialog open={isPostedDialogOpen} onOpenChange={setIsPostedDialogOpen}>
-        <DialogContent className="sm:max-w-4xl max-h-[80vh]">
+        <DialogContent className="sm:max-w-5xl max-h-[85vh]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Archive className="w-5 h-5" />
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Archive className="w-6 h-6 text-blue-600" />
               Posted Content ({postedContent.length})
             </DialogTitle>
           </DialogHeader>
           
-          <div className="overflow-y-auto max-h-[60vh]">
+          <div className="overflow-y-auto max-h-[65vh] bg-gray-50 rounded-lg p-4">
             {postedContent.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10">
-                <Archive className="w-12 h-12 text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-700">No Posted Content</h3>
-                <p className="text-gray-500 text-sm mt-1">
+              <div className="flex flex-col items-center justify-center py-12">
+                <Archive className="w-16 h-16 text-gray-300 mb-4" />
+                <h3 className="text-xl font-medium text-gray-700">No Posted Content</h3>
+                <p className="text-gray-500 text-sm mt-2">
                   Content that has been posted will appear here
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {postedContent.map((content) => (
-                  <Card key={content.id} className="overflow-hidden">
+                  <Card key={content.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200 bg-white">
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
-                        <CardTitle className="text-sm font-semibold">{content.title}</CardTitle>
-                        <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
-                          Posted
-                        </Badge>
+                        <CardTitle className="text-sm font-semibold text-gray-900">{content.title}</CardTitle>
+                        <div className="flex gap-2">
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            Posted
+                          </Badge>
+                        </div>
                       </div>
-                      <CardDescription className="text-xs line-clamp-2">
-                        {content.description}
-                      </CardDescription>
+                      {content.description && (
+                        <CardDescription className="text-xs line-clamp-2 text-gray-600">
+                          {content.description}
+                        </CardDescription>
+                      )}
                     </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="text-xs text-gray-500 space-y-1">
-                        {content.assignedChannel && (
+                    <CardContent className="pt-0 pb-3">
+                      <div className="text-xs text-gray-500 space-y-2">
+                        {content.originalChannel && (
                           <div className="flex items-center gap-2">
+                            <Video className="w-3 h-3 text-purple-500" />
                             <span className="font-medium">Channel:</span>
-                            <span>{channels.find(ch => ch.id === content.assignedChannel)?.name || content.assignedChannel}</span>
+                            <span className="text-purple-600">
+                              {channels.find(ch => ch.id === content.originalChannel)?.name || content.originalChannel}
+                            </span>
                           </div>
                         )}
                         {content.videoUrl && (
@@ -475,17 +593,32 @@ export default function ContentManagerPage() {
                               href={content.videoUrl} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="text-blue-500 hover:underline truncate"
+                              className="text-blue-500 hover:underline truncate flex-1"
                             >
-                              {content.videoUrl}
+                              {content.videoUrl.length > 40 ? content.videoUrl.substring(0, 40) + '...' : content.videoUrl}
                             </a>
                           </div>
                         )}
                         {content.postedAt && (
-                          <div className="text-gray-400">
-                            Posted: {new Date(content.postedAt.seconds * 1000).toLocaleDateString()}
+                          <div className="flex items-center gap-2 text-gray-400">
+                            <Calendar className="w-3 h-3" />
+                            <span>Posted: {formatDate(content.postedAt)}</span>
                           </div>
                         )}
+                      </div>
+                      
+                      {/* Undo Button */}
+                      <div className="mt-3 pt-2 border-t border-gray-100">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => undoPostedContent(content)}
+                          disabled={isSubmitting}
+                          className="w-full flex items-center gap-2 text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300"
+                        >
+                          <Undo2 className="w-3 h-3" />
+                          {isSubmitting ? 'Restoring...' : 'Undo Posted'}
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>

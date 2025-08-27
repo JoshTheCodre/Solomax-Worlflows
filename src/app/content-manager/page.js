@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Calendar, Archive, LinkIcon } from 'lucide-react';
+import { Calendar, Archive, LinkIcon, Undo2, FolderOpen, Video, FileText, Image } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { getFirestore, collection, query, where, getDocs, doc, updateDoc, orderBy } from 'firebase/firestore';
@@ -32,6 +32,8 @@ export default function ContentManagerPage() {
   const [videoUrl, setVideoUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [draggedItem, setDraggedItem] = useState(null);
+  const [animatingCard, setAnimatingCard] = useState(null);
+  const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0, item: null });
   const router = useRouter();
   const { user } = useAuthStore();
 
