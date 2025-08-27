@@ -478,71 +478,71 @@ export default function ContentManagerPage() {
 
       {/* Task Details Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="sm:max-w-lg bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-slate-800 font-bold text-xl">Task Details</DialogTitle>
+        <DialogContent className="sm:max-w-xs bg-white">
+          <DialogHeader className="pb-1">
+            <DialogTitle className="text-slate-800 font-bold text-sm">Task Details</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-              <Label className="text-sm font-medium text-slate-600">
+          <div className="space-y-1.5">
+            <div className="p-1.5 bg-slate-50 rounded border border-slate-200">
+              <Label className="text-xs font-medium text-slate-600">
                 Task Title
               </Label>
-              <div className="text-lg font-bold mt-1 text-slate-800">{selectedContent?.title}</div>
+              <div className="text-xs font-bold text-slate-800">{selectedContent?.title}</div>
             </div>
             
             {selectedContent?.description && (
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <Label className="text-sm font-medium text-slate-600">
+              <div className="p-1.5 bg-gray-50 rounded border border-gray-200">
+                <Label className="text-xs font-medium text-slate-600">
                   Description
                 </Label>
-                <div className="text-sm mt-1 text-slate-700">{selectedContent.description}</div>
+                <div className="text-xs text-slate-700">{selectedContent.description}</div>
               </div>
             )}
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="grid grid-cols-2 gap-1.5">
+              <div className="p-1 bg-blue-50 rounded border border-blue-200">
                 <Label className="text-xs font-medium text-blue-600">
                   Status
                 </Label>
-                <div className="text-sm font-semibold mt-1 text-blue-800">
+                <div className="text-xs font-semibold text-blue-800">
                   {selectedContent?.status || 'Completed'}
                 </div>
               </div>
               
-              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+              <div className="p-1 bg-green-50 rounded border border-green-200">
                 <Label className="text-xs font-medium text-green-600">
                   Completed
                 </Label>
-                <div className="text-sm font-semibold mt-1 text-green-800">
+                <div className="text-xs font-semibold text-green-800">
                   {selectedContent && formatDate(selectedContent.completedAt || selectedContent.createdAt)}
                 </div>
               </div>
             </div>
             
             {selectedContent?.assignedChannel && (
-              <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="p-1 bg-purple-50 rounded border border-purple-200">
                 <Label className="text-xs font-medium text-purple-600">
                   Current Channel
                 </Label>
-                <div className="text-sm font-semibold mt-1 text-purple-800">
+                <div className="text-xs font-semibold text-purple-800">
                   {channels.find(ch => ch.id === selectedContent.assignedChannel)?.name || selectedContent.assignedChannel}
                 </div>
               </div>
             )}
           </div>
 
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsDetailOpen(false)} className="text-slate-600 hover:text-slate-800">
+          <DialogFooter className="pt-1.5">
+            <Button variant="ghost" onClick={() => setIsDetailOpen(false)} className="text-slate-600 hover:text-slate-800 text-xs px-2 py-0.5">
               Close
             </Button>
             <Button 
               variant="default" 
               onClick={() => moveToPostedFromContext(selectedContent)} 
               disabled={isSubmitting}
-              className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
+              className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white text-xs px-2 py-0.5"
             >
-              {isSubmitting ? 'Moving to Posted...' : 'Move to Posted'}
+              {isSubmitting ? 'Moving...' : 'Move to Posted'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -550,28 +550,28 @@ export default function ContentManagerPage() {
 
       {/* Posted Content Dialog */}
       <Dialog open={isPostedDialogOpen} onOpenChange={setIsPostedDialogOpen}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] bg-white">
-          <DialogHeader className="border-b border-gray-200 pb-4">
-            <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-gray-800">
-              <div className="p-2 bg-gradient-to-r from-slate-600 to-slate-700 rounded-lg">
-                <Archive className="w-6 h-6 text-white" />
+        <DialogContent className="sm:max-w-2xl max-h-[75vh] bg-white">
+          <DialogHeader className="border-b border-gray-200 pb-3">
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-800">
+              <div className="p-1.5 bg-gradient-to-r from-slate-600 to-slate-700 rounded-md">
+                <Archive className="w-4 h-4 text-white" />
               </div>
               <span className="text-slate-800">
                 Posted Content
               </span>
-              <div className="bg-slate-100 px-3 py-1 rounded-full text-sm font-medium text-slate-700">
+              <div className="bg-slate-100 px-2 py-0.5 rounded-full text-xs font-medium text-slate-700">
                 {postedContent.length}
               </div>
             </DialogTitle>
           </DialogHeader>
           
-          <div className="overflow-y-auto max-h-[70vh] py-4">
+          <div className="overflow-y-auto max-h-[55vh] py-3">
             {postedContent.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <div className="p-6 bg-gray-100 rounded-full mb-6">
-                  <Archive className="w-16 h-16 text-gray-400" />
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="p-4 bg-gray-100 rounded-full mb-4">
+                  <Archive className="w-12 h-12 text-gray-400" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-600 mb-2">No Posted Content</h3>
+                <h3 className="text-lg font-bold text-gray-600 mb-2">No Posted Content</h3>
                 <p className="text-gray-500 text-sm">
                   Content that has been posted will appear here
                 </p>

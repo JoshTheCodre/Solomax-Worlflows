@@ -38,6 +38,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
     type: '',
     priority: '',
     assignee: '',
+    channel: '',
     deadline: new Date().toISOString().slice(0, 10), // YYYY-MM-DD format for date input
   });
 
@@ -139,6 +140,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
         type: '',
         priority: '',
         assignee: '',
+        channel: '',
         deadline: new Date().toISOString().slice(0, 10), // YYYY-MM-DD format for date input
       });
       setAttachments([]);
@@ -159,16 +161,19 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-medium text-gray-900 pb-2 border-b border-gray-200">
+      <DialogContent className="max-w-4xl bg-gradient-to-br from-slate-50 to-white border border-slate-200 shadow-2xl">
+        <DialogHeader className="border-b border-slate-200 pb-3">
+          <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <div className="p-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-md">
+              <CheckCircle2 className="w-5 h-5 text-white" />
+            </div>
             Create New Task
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <Card className="p-6 border border-gray-200">
-            <div className="space-y-6">
+          <Card className="p-4 border-0 bg-white/80 backdrop-blur-sm shadow-lg">
+            <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="title" className="text-sm font-medium flex items-center gap-2 text-gray-700">
@@ -292,6 +297,33 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center gap-2 text-gray-700">
+                    <Archive className="w-4 h-4" />
+                    Channel
+                  </label>
+                  <Select
+                    value={formData.channel}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, channel: value })
+                    }
+                    required
+                  >
+                    <SelectTrigger className="w-full transition-all duration-200 focus:ring-1 focus:ring-black border-gray-200 hover:border-gray-300">
+                      <SelectValue placeholder="Select Channel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="animation-fastfood">Animation Fastfood</SelectItem>
+                      <SelectItem value="epictoons">EpicToons</SelectItem>
+                      <SelectItem value="alpha-recap">Alpha Recap</SelectItem>
+                      <SelectItem value="super-recap">Super Recap</SelectItem>
+                      <SelectItem value="beta-recap">Beta Recap</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2 text-gray-700">
                     <UploadCloud className="w-4 h-4" />
                     Attachments
                   </label>
@@ -319,9 +351,6 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
                       accept="*/*"
                       className="cursor-pointer"
                     />
-                    <p className="text-xs text-gray-500">
-                      Files will be uploaded to your media library and attached to this task
-                    </p>
                     {attachments.length > 0 && (
                       <div className="mt-2">
                         <p className="text-xs text-gray-500 font-medium mb-2">Attached Files:</p>
@@ -359,7 +388,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="h-32 resize-none transition-all duration-200 focus:ring-1 focus:ring-black border-gray-200 hover:border-gray-300"
+                  className="h-16 resize-none transition-all duration-200 focus:ring-1 focus:ring-black border-gray-200 hover:border-gray-300"
                   placeholder="Enter task description"
                   required
                 />
@@ -367,22 +396,22 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
             </div>
           </Card>
 
-          <div className="flex justify-end space-x-3 mt-6">
+          <div className="flex justify-end space-x-4 mt-4 pt-4 border-t border-slate-200">
             <Button
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
-              className="border border-gray-200 hover:bg-gray-50"
+              className="border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2"
             >
               Cancel
             </Button>
             <Button 
               type="submit"
-              className="bg-gradient-to-r from-blue-900 to-blue-700 text-white font-medium gap-2 shadow-lg hover:shadow-blue-200 px-6 border border-blue-800 hover:from-blue-800 hover:to-blue-600 transition-all duration-300"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold gap-2 shadow-lg hover:shadow-xl px-6 py-2 transition-all duration-300"
               disabled={loading}
             >
               {loading ? (
-                <>Loading...</>
+                <>Creating...</>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
