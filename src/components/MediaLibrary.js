@@ -7,9 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { 
+import {
   Trash2, Download, Eye, Upload, Image, MoreVertical, Edit3, X, Filter, Calendar, User,
-  FileImage, FileText, FileAudio, FileVideo, Folder, File, FileCode, FileCog, Music 
+  FileImage, FileText, FileAudio, FileVideo, Folder, File, FileCode, FileCog, Music
 } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import { MEDIA_TYPES } from '@/lib/utils';
@@ -33,45 +33,45 @@ export function MediaLibrary({ onSelect }) {
     setSelectedFileMetadata(item);
     setShowMetadata(true);
   };
-  
+
   const closeSidebar = () => {
     setShowMetadata(false);
     setSelectedFileMetadata(null);
   };
   const { user } = useAuthStore();
-  const { 
-    media, 
-    loading, 
-    error, 
-    getMediaByType, 
-    deleteMedia, 
+  const {
+    media,
+    loading,
+    error,
+    getMediaByType,
+    deleteMedia,
     uploadFiles,
-    setMedia 
+    setMedia
   } = useMediaStore();
 
   // Helper function to check if a file is an image
   const isImageFile = (item) => {
     if (!item) return false;
-    
+
     // Check by file extension
     const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif'];
     const filename = item.filename || item.original_filename || '';
     const extension = filename.split('.').pop()?.toLowerCase();
     const isImageByExtension = imageExtensions.includes(extension);
-    
+
     // Check by MIME type
     const mimeType = (item.type || item.contentType || '').toLowerCase();
     const isImageByMime = mimeType.startsWith('image/');
-    
+
     // Check by explicit type
     const isImageByType = item.type === MEDIA_TYPES.IMAGE;
-    
+
     return isImageByExtension || isImageByMime || isImageByType;
   };
 
   // Get all media of current type, including correcting image types
   let mediaOfType;
-  
+
   if (activeTab === 'all') {
     // For All tab, get all media files
     mediaOfType = Array.isArray(media) ? media : [];
@@ -90,7 +90,7 @@ export function MediaLibrary({ onSelect }) {
       }
       return item;
     });
-    
+
     // For Documents tab, filter out any image files
     if (activeTab === MEDIA_TYPES.DOCUMENT) {
       mediaOfType = mediaOfType.filter(item => !isImageFile(item));
@@ -103,7 +103,7 @@ export function MediaLibrary({ onSelect }) {
     .filter(item => {
       // Search filter
       const matchesSearch = item.filename.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.uploadedBy.toLowerCase().includes(searchQuery.toLowerCase());
+        item.uploadedBy.toLowerCase().includes(searchQuery.toLowerCase());
       // Date/size filter
       let matchesFilter = true;
       if (filterBy !== 'all') {
@@ -157,9 +157,9 @@ export function MediaLibrary({ onSelect }) {
           return <File className="w-6 h-6 text-gray-500" />;
       }
     }
-    
+
     const extension = item.filename.split('.').pop().toLowerCase();
-    
+
     switch (item.type) {
       case MEDIA_TYPES.PROJECT_FILES:
         if (extension === 'pp' || extension === 'png') {
@@ -172,10 +172,10 @@ export function MediaLibrary({ onSelect }) {
           return <FileVideo className="w-6 h-6 text-purple-500" />;
         }
         return <Folder className="w-6 h-6 text-amber-500" />;
-      
+
       case MEDIA_TYPES.IMAGE:
         return <FileImage className="w-6 h-6 text-blue-500" />;
-      
+
       case MEDIA_TYPES.AUDIO:
         return (
           <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center">
@@ -185,7 +185,7 @@ export function MediaLibrary({ onSelect }) {
 
       case MEDIA_TYPES.VIDEO:
         return <FileVideo className="w-6 h-6 text-pink-500" />;
-      
+
       case MEDIA_TYPES.DOCUMENT:
         if (extension === 'pdf') {
           return <FileText className="w-6 h-6 text-red-500" />;
@@ -197,7 +197,7 @@ export function MediaLibrary({ onSelect }) {
           return <FileText className="w-6 h-6 text-gray-600" />;
         }
         return <FileText className="w-6 h-6 text-orange-500" />;
-      
+
       default:
         return <File className="w-6 h-6 text-gray-500" />;
     }
@@ -206,10 +206,10 @@ export function MediaLibrary({ onSelect }) {
   const formatDate = (timestamp) => {
     if (!timestamp) return 'Unknown';
     const date = new Date(timestamp.seconds * 1000);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     });
   };
 
@@ -225,9 +225,9 @@ export function MediaLibrary({ onSelect }) {
     if (e) {
       e.stopPropagation();
     }
-    
+
     const confirmDelete = e ? window.confirm(`Move "${item.filename}" to recycle bin?`) : true;
-    
+
     if (confirmDelete) {
       try {
         // Check if item is already in recycle bin
@@ -240,15 +240,15 @@ export function MediaLibrary({ onSelect }) {
         // Add to deleted files with timestamp
         const deletedItem = { ...item, deletedAt: new Date() };
         setDeletedFiles(prev => [...prev, deletedItem]);
-        
+
         // Update media store state - remove only the specific item
         const currentMedia = Array.isArray(media) ? media : [];
         const updatedMedia = currentMedia.filter(file => file.id !== item.id);
         setMedia(updatedMedia);
-        
+
         // Remove from availableContent if present
         setAvailableContent(prev => prev.filter(c => c.id !== item.id));
-        
+
         // Remove from channels if present
         setContentByChannel(prev => {
           const newState = { ...prev };
@@ -259,7 +259,7 @@ export function MediaLibrary({ onSelect }) {
           });
           return newState;
         });
-        
+
         toast.success(`"${item.filename}" moved to recycle bin`);
         if (showMetadata) {
           closeSidebar();
@@ -274,7 +274,7 @@ export function MediaLibrary({ onSelect }) {
   const handleRestore = (item) => {
     // Remove from deleted files
     setDeletedFiles(prev => prev.filter(f => f.id !== item.id));
-    
+
     // Add back to appropriate collection
     if (item.type === MEDIA_TYPES.PROJECT_FILES) {
       setAvailableContent(prev => [...prev, item]);
@@ -285,7 +285,7 @@ export function MediaLibrary({ onSelect }) {
         [item.channel]: [...(prev[item.channel] || []), item]
       }));
     }
-    
+
     toast.success(`"${item.filename}" restored successfully`);
   };
 
@@ -312,20 +312,20 @@ export function MediaLibrary({ onSelect }) {
     if (type === 'all') {
       return Array.isArray(media) ? media.length : 0;
     }
-    
+
     const mediaForType = getMediaByType(type);
-    
+
     // For Documents tab, exclude image files from count
     if (type === MEDIA_TYPES.DOCUMENT) {
       return mediaForType.filter(item => !isImageFile(item)).length;
     }
-    
+
     // For Images tab, include files with image extensions
     if (type === MEDIA_TYPES.IMAGE) {
       const allMedia = Array.isArray(media) ? media : [];
       return allMedia.filter(item => isImageFile(item)).length;
     }
-    
+
     return mediaForType.length;
   };
 
@@ -341,17 +341,20 @@ export function MediaLibrary({ onSelect }) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-4">
-        <Input
-          type="text"
-          placeholder="Search media..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-sm"
-        />
-        
-        <Select value={filterBy} onValueChange={setFilterBy}>
+    <div className="flex gap-4 h-full">
+      {/* Main Content Area */}
+      <div className={`flex-1 transition-all duration-300 ${showMetadata ? 'mr-80' : ''}`}>
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <Input
+              type="text"
+              placeholder="Search media..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="max-w-sm"
+            />
+
+            <Select value={filterBy} onValueChange={setFilterBy}>
           <SelectTrigger className="w-48">
             <Filter className="w-4 h-4 mr-2" />
             <SelectValue placeholder="Filter by..." />
@@ -365,7 +368,7 @@ export function MediaLibrary({ onSelect }) {
             <SelectItem key="small" value="small">Small Files (&lt;1MB)</SelectItem>
           </SelectContent>
         </Select>
-        
+
         <div className="relative ml-auto">
           <Input
             type="file"
@@ -375,8 +378,8 @@ export function MediaLibrary({ onSelect }) {
             accept="*/*"
           />
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setShowRecycleBin(true)}
               className="relative hover:bg-gray-100"
             >
@@ -397,8 +400,8 @@ export function MediaLibrary({ onSelect }) {
 
       <Tabs defaultValue="all" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-6 p-1 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg gap-1">
-          <TabsTrigger 
-            value="all" 
+          <TabsTrigger
+            value="all"
             className="flex items-center gap-2 px-3 py-2 data-[state=active]:bg-gray-50 data-[state=active]:text-gray-700 data-[state=active]:border-2 data-[state=active]:border-dashed data-[state=active]:border-gray-300 relative group transition-all duration-200"
           >
             <Folder className="w-4 h-4 text-gray-700 group-data-[state=active]:text-gray-500" />
@@ -407,8 +410,8 @@ export function MediaLibrary({ onSelect }) {
               {getTabCount('all')}
             </span>
           </TabsTrigger>
-          <TabsTrigger 
-            value={MEDIA_TYPES.PROJECT_FILES} 
+          <TabsTrigger
+            value={MEDIA_TYPES.PROJECT_FILES}
             className="flex items-center gap-2 px-3 py-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 data-[state=active]:border-2 data-[state=active]:border-dashed data-[state=active]:border-purple-300 relative group transition-all duration-200"
           >
             <FileCog className="w-4 h-4 text-gray-700 group-data-[state=active]:text-purple-500" />
@@ -417,8 +420,8 @@ export function MediaLibrary({ onSelect }) {
               {getTabCount(MEDIA_TYPES.PROJECT_FILES)}
             </span>
           </TabsTrigger>
-          <TabsTrigger 
-            value={MEDIA_TYPES.VIDEO} 
+          <TabsTrigger
+            value={MEDIA_TYPES.VIDEO}
             className="flex items-center gap-2 px-3 py-2 data-[state=active]:bg-pink-50 data-[state=active]:text-pink-700 data-[state=active]:border-2 data-[state=active]:border-dashed data-[state=active]:border-pink-300 relative group transition-all duration-200"
           >
             <FileVideo className="w-4 h-4 text-gray-700 group-data-[state=active]:text-pink-500" />
@@ -427,8 +430,8 @@ export function MediaLibrary({ onSelect }) {
               {getTabCount(MEDIA_TYPES.VIDEO)}
             </span>
           </TabsTrigger>
-          <TabsTrigger 
-            value={MEDIA_TYPES.AUDIO} 
+          <TabsTrigger
+            value={MEDIA_TYPES.AUDIO}
             className="flex items-center gap-2 px-3 py-2 data-[state=active]:bg-green-50 data-[state=active]:text-green-700 data-[state=active]:border-2 data-[state=active]:border-dashed data-[state=active]:border-green-300 relative group transition-all duration-200"
           >
             <Music className="w-4 h-4 text-gray-700 group-data-[state=active]:text-green-700" />
@@ -437,8 +440,8 @@ export function MediaLibrary({ onSelect }) {
               {getTabCount(MEDIA_TYPES.AUDIO)}
             </span>
           </TabsTrigger>
-          <TabsTrigger 
-            value={MEDIA_TYPES.IMAGE} 
+          <TabsTrigger
+            value={MEDIA_TYPES.IMAGE}
             className="flex items-center gap-2 px-3 py-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-2 data-[state=active]:border-dashed data-[state=active]:border-blue-300 relative group transition-all duration-200"
           >
             <FileImage className="w-4 h-4 text-gray-700 group-data-[state=active]:text-blue-500" />
@@ -447,8 +450,8 @@ export function MediaLibrary({ onSelect }) {
               {getTabCount(MEDIA_TYPES.IMAGE)}
             </span>
           </TabsTrigger>
-          <TabsTrigger 
-            value={MEDIA_TYPES.DOCUMENT} 
+          <TabsTrigger
+            value={MEDIA_TYPES.DOCUMENT}
             className="flex items-center gap-2 px-3 py-2 data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700 data-[state=active]:border-2 data-[state=active]:border-dashed data-[state=active]:border-amber-300 relative group transition-all duration-200"
           >
             <FileText className="w-4 h-4 text-gray-700 group-data-[state=active]:text-amber-500" />
@@ -458,10 +461,10 @@ export function MediaLibrary({ onSelect }) {
             </span>
           </TabsTrigger>
         </TabsList>
-
+        
         <TabsContent key="all" value="all" className="mt-4">
           {loading ? (
-            <div className="text-center p-12">
+            <div className="text-center p-8">
               <div className="relative w-16 h-16 mx-auto mb-4">
                 <div className="absolute top-0 left-0 w-full h-full rounded-full border-4 border-gray-200 dark:border-gray-700"></div>
                 <div className="absolute top-0 left-0 w-full h-full rounded-full border-4 border-t-transparent border-indigo-500 animate-spin"></div>
@@ -477,8 +480,8 @@ export function MediaLibrary({ onSelect }) {
                 {searchQuery ? 'No matches found' : 'No files yet'}
               </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-4">
-                {searchQuery 
-                  ? `No files found matching "${searchQuery}"` 
+                {searchQuery
+                  ? `No files found matching "${searchQuery}"`
                   : `No files have been uploaded yet`
                 }
               </p>
@@ -491,9 +494,9 @@ export function MediaLibrary({ onSelect }) {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredMedia.map((item) => (
-                <Card 
-                  key={item.id} 
-                  className="group relative cursor-pointer hover:shadow-xl transition-all duration-300 bg-white border border-gray-200 shadow-sm overflow-hidden rounded-xl h-80" 
+                <Card
+                  key={item.id}
+                  className="group relative cursor-pointer hover:shadow-xl transition-all duration-300 bg-white border border-gray-200 shadow-sm overflow-hidden rounded-xl h-56 py-0"
                   onClick={() => onSelect?.(item)}
                   onContextMenu={(e) => handleRightClick(e, item)}
                 >
@@ -521,30 +524,30 @@ export function MediaLibrary({ onSelect }) {
                     </div>
                   </div>
 
-                  {/* Content Layout - Fixed Height Structure */}
+                  {/* Content Layout - Reduced Height */}
                   <div className="h-full flex flex-col">
-                    {/* Preview Section - Fixed Height */}
-                    <div className="h-40 bg-gray-100 rounded-t-xl overflow-hidden relative">
+                    {/* Preview Section - No Top Rounding */}
+                    <div className="h-32 bg-gray-100 rounded-t-xl overflow-hidden relative">
                       {item.type === MEDIA_TYPES.VIDEO && (
-                        <video 
-                          src={item.url} 
+                        <video
+                          src={item.url}
                           className="w-full h-full object-cover"
                           preload="metadata"
                         />
                       )}
-                      
+
                       {item.type === MEDIA_TYPES.AUDIO && (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-100 to-purple-200">
                           <div className="text-center">
-                            <Music className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-                            <span className="text-sm text-purple-700 font-medium">Audio File</span>
+                            <Music className="w-6 h-6 text-purple-600 mx-auto mb-1" />
+                            <span className="text-xs text-purple-700 font-medium">Audio</span>
                           </div>
                         </div>
                       )}
 
                       {(item.type === MEDIA_TYPES.IMAGE || isImageFile(item)) && (
-                        <img 
-                          src={item.url} 
+                        <img
+                          src={item.url}
                           alt={item.filename}
                           className="w-full h-full object-cover"
                           loading="lazy"
@@ -554,8 +557,8 @@ export function MediaLibrary({ onSelect }) {
                       {item.type === MEDIA_TYPES.DOCUMENT && (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200">
                           <div className="text-center">
-                            <FileText className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                            <span className="text-sm text-blue-700 font-medium">Document</span>
+                            <FileText className="w-6 h-6 text-blue-600 mx-auto mb-1" />
+                            <span className="text-xs text-blue-700 font-medium">Document</span>
                           </div>
                         </div>
                       )}
@@ -563,8 +566,8 @@ export function MediaLibrary({ onSelect }) {
                       {item.type === MEDIA_TYPES.PROJECT_FILES && (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-100 to-amber-200">
                           <div className="text-center">
-                            <img src="/pp.png" className="w-8 h-8 mx-auto mb-2" alt="Project file" />
-                            <span className="text-sm text-amber-700 font-medium">Project File</span>
+                            <img src="/pp.png" className="w-6 h-6 mx-auto mb-1" alt="Project file" />
+                            <span className="text-xs text-amber-700 font-medium">Project</span>
                           </div>
                         </div>
                       )}
@@ -573,34 +576,34 @@ export function MediaLibrary({ onSelect }) {
                       {!['video', 'audio', 'image', 'document', 'project_files'].includes(item.type) && (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
                           <div className="text-center">
-                            <File className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                            <span className="text-sm text-gray-700 font-medium">File</span>
+                            <File className="w-6 h-6 text-gray-600 mx-auto mb-1" />
+                            <span className="text-xs text-gray-700 font-medium">File</span>
                           </div>
                         </div>
                       )}
                     </div>
 
-                    {/* Content Info - Remaining Height */}
-                    <div className="flex-1 p-4 flex flex-col justify-between">
+                    {/* Content Info - Compact Layout */}
+                    <div className="flex-1 p-3 flex flex-col justify-between">
                       {/* Title and Size */}
-                      <div className="mb-3">
-                        <h3 className="font-semibold text-sm text-gray-900 leading-tight mb-2 line-clamp-2" title={item.filename}>
+                      <div className="mb-2">
+                        <h3 className="font-semibold text-sm text-gray-900 leading-tight mb-1 line-clamp-2" title={item.filename}>
                           {item.filename}
                         </h3>
-                        <span className="inline-block text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
+                        <span className="inline-block text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
                           {formatFileSize(item.size)}
                         </span>
                       </div>
 
-                      {/* Footer */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span className="truncate">{item.uploadedBy}</span>
-                          <span>{formatDate(item.uploadedAt || item.createdAt)}</span>
+                      {/* Footer with Flex Wrap */}
+                      <div className="space-y-1.5">
+                        <div className="flex flex-wrap items-center justify-between gap-1 text-xs text-gray-500">
+                          <span className="truncate min-w-0 flex-shrink">{item.uploadedBy}</span>
+                          <span className="flex-shrink-0">{formatDate(item.uploadedAt || item.createdAt)}</span>
                         </div>
                         <div className="text-center">
-                          <span className="inline-block px-2 py-1 bg-gray-900 text-white text-xs font-medium rounded-md">
-                            {item.type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          <span className="inline-block px-2 py-0.5 bg-gray-900 text-white text-xs font-medium rounded">
+                            {(item.type || 'file').split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                           </span>
                         </div>
                       </div>
@@ -631,8 +634,8 @@ export function MediaLibrary({ onSelect }) {
                   {searchQuery ? 'No matches found' : 'No files yet'}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 mb-4">
-                  {searchQuery 
-                    ? `No ${type} files found matching "${searchQuery}"` 
+                  {searchQuery
+                    ? `No ${type} files found matching "${searchQuery}"`
                     : `No ${type} files have been uploaded yet`
                   }
                 </p>
@@ -643,11 +646,11 @@ export function MediaLibrary({ onSelect }) {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-0">
                 {filteredMedia.map((item) => (
-                  <Card 
-                    key={item.id} 
-                    className="group relative cursor-pointer hover:shadow-2xl transition-all duration-500 bg-white border border-gray-200/50 shadow-lg overflow-hidden rounded-2xl h-fit" 
+                  <Card
+                    key={item.id}
+                    className="group relative cursor-pointer hover:shadow-2xl transition-all duration-500 bg-white border border-gray-200/50 shadow-lg overflow-hidden rounded-2xl h-fit"
                     onClick={() => onSelect?.(item)}
                     onContextMenu={(e) => handleRightClick(e, item)}
                   >
@@ -705,14 +708,14 @@ export function MediaLibrary({ onSelect }) {
                       {/* Preview Section */}
                       {item.type === MEDIA_TYPES.VIDEO && (
                         <div className="mb-4 aspect-video bg-gray-100 rounded-xl overflow-hidden border border-gray-200 shadow-inner">
-                          <video 
-                            src={item.url} 
+                          <video
+                            src={item.url}
                             className="w-full h-full object-cover"
                             preload="metadata"
                           />
                         </div>
                       )}
-                      
+
                       {item.type === MEDIA_TYPES.AUDIO && (
                         <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200">
                           <audio controls className="w-full h-6">
@@ -723,8 +726,8 @@ export function MediaLibrary({ onSelect }) {
 
                       {(item.type === MEDIA_TYPES.IMAGE || isImageFile(item)) && (
                         <div className="mb-4 aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden border border-gray-200 shadow-inner">
-                          <img 
-                            src={item.url} 
+                          <img
+                            src={item.url}
                             alt={item.filename}
                             className="w-full h-full object-cover"
                             loading="lazy"
@@ -746,7 +749,7 @@ export function MediaLibrary({ onSelect }) {
                         </div>
                         <div className="text-center">
                           <span className="inline-block px-3 py-1.5 bg-gradient-to-r from-gray-900 to-gray-700 text-white text-xs font-semibold rounded-full shadow-sm">
-                            {type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                            {(type || 'file').split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                           </span>
                         </div>
                       </div>
@@ -758,99 +761,148 @@ export function MediaLibrary({ onSelect }) {
           </TabsContent>
         ))}
       </Tabs>
-      
-      {/* Metadata Sidebar */}
+        </div>
+      </div>
+
+      {/* Responsive Metadata Sidebar */}
       {showMetadata && selectedFileMetadata && (
-        <div 
-          className="fixed z-50 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border overflow-hidden w-72 transform transition-all duration-200"
-          style={{
-            right: '1rem',
-            top: '5rem'
-          }}
-        >
-          <div className="p-3 bg-gradient-to-b from-gray-50 to-white flex justify-between items-center border-b">
-            <h3 className="font-medium text-sm flex items-center gap-2">
-              <Eye className="w-4 h-4 text-indigo-600" />
-              File Info
-            </h3>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-6 w-6 p-0 rounded-full hover:bg-gray-100" 
-              onClick={closeSidebar}
-            >
-              <X className="w-3 h-3" />
-            </Button>
-          </div>
-          
-          <div className="p-4 space-y-3">
-            <div className="flex gap-3 items-center">
-              <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center">
-                <span className="text-xl">{getFileIcon(selectedFileMetadata)}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-gray-900 truncate" title={selectedFileMetadata.filename}>
-                  {selectedFileMetadata.filename}
-                </p>
-                <p className="text-xs text-gray-500">{formatFileSize(selectedFileMetadata.size)}</p>
-              </div>
+        <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-xl z-50 transform transition-transform duration-300 ease-in-out">
+          <div className="h-full flex flex-col">
+            <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="font-semibold text-lg flex items-center gap-2 text-gray-800">
+                <Eye className="w-5 h-5 text-indigo-600" />
+                File Details
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 rounded-full hover:bg-white/50"
+                onClick={closeSidebar}
+              >
+                <X className="w-4 h-4" />
+              </Button>
             </div>
-            
-            <div className="space-y-2.5 text-sm">
-              <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-indigo-50/50 rounded-lg">
-                <div className="flex items-center gap-2 text-indigo-600">
-                  <User className="w-3.5 h-3.5" />
-                  <span className="text-xs font-medium">Uploaded by</span>
-                </div>
-                <span className="text-xs text-gray-700">{selectedFileMetadata.uploadedBy}</span>
-              </div>
-              
-              <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-indigo-50/50 rounded-lg">
-                <div className="flex items-center gap-2 text-indigo-600">
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span className="text-xs font-medium">Date</span>
-                </div>
-                <span className="text-xs text-gray-700">
-                  {formatDate(selectedFileMetadata.uploadedAt || selectedFileMetadata.createdAt)}
-                </span>
-              </div>
-              
-              {selectedFileMetadata.channel && (
-                <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-indigo-50/50 rounded-lg">
-                  <div className="flex items-center gap-2 text-indigo-600">
-                    <Tv className="w-3.5 h-3.5" />
-                    <span className="text-xs font-medium">Channel</span>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* File Preview */}
+              <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
+                {(selectedFileMetadata.type === MEDIA_TYPES.IMAGE || isImageFile(selectedFileMetadata)) && (
+                  <img 
+                    src={selectedFileMetadata.url} 
+                    alt={selectedFileMetadata.filename}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                {selectedFileMetadata.type === MEDIA_TYPES.VIDEO && (
+                  <video 
+                    src={selectedFileMetadata.url} 
+                    className="w-full h-full object-cover"
+                    controls
+                  />
+                )}
+                {selectedFileMetadata.type === MEDIA_TYPES.AUDIO && (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-100 to-purple-200">
+                    <Music className="w-12 h-12 text-purple-600 mb-4" />
+                    <audio controls className="w-full max-w-xs">
+                      <source src={selectedFileMetadata.url} />
+                    </audio>
                   </div>
-                  <span className="text-xs text-gray-700">{selectedFileMetadata.channel}</span>
+                )}
+                {![MEDIA_TYPES.IMAGE, MEDIA_TYPES.VIDEO, MEDIA_TYPES.AUDIO].includes(selectedFileMetadata.type) && !isImageFile(selectedFileMetadata) && (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center mx-auto mb-3 shadow-sm">
+                        {selectedFileMetadata.type === MEDIA_TYPES.PROJECT_FILES ? (
+                          <img src="/pp.png" className="w-8 h-8" alt="Project file" />
+                        ) : (
+                          getFileIcon(selectedFileMetadata)
+                        )}
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">
+                        {(selectedFileMetadata.type || 'file').split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* File Information */}
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Filename</label>
+                  <p className="font-medium text-gray-900 mt-1 break-words" title={selectedFileMetadata.filename}>
+                    {selectedFileMetadata.filename}
+                  </p>
                 </div>
-              )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Size</label>
+                    <p className="font-medium text-gray-900 mt-1">{formatFileSize(selectedFileMetadata.size)}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</label>
+                    <p className="font-medium text-gray-900 mt-1">
+                      {(selectedFileMetadata.type || 'file').split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Uploaded By</label>
+                  <p className="font-medium text-gray-900 mt-1">{selectedFileMetadata.uploadedBy}</p>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Upload Date</label>
+                  <p className="font-medium text-gray-900 mt-1">
+                    {formatDate(selectedFileMetadata.uploadedAt || selectedFileMetadata.createdAt)}
+                  </p>
+                </div>
+
+                {selectedFileMetadata.channel && (
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Channel</label>
+                    <p className="font-medium text-gray-900 mt-1">{selectedFileMetadata.channel}</p>
+                  </div>
+                )}
+              </div>
             </div>
-            
-            <div className="flex gap-2 pt-1">
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex-1 h-7 text-xs gap-1.5 hover:bg-indigo-50 hover:text-indigo-600"
-                onClick={(e) => handleDownload(selectedFileMetadata, e)}
-              >
-                <Download className="w-3 h-3" />
-                Download
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex-1 h-7 text-xs gap-1.5 text-red-500 hover:bg-red-50 hover:text-red-600"
-                onClick={(e) => {
-                  handleDelete(selectedFileMetadata, e);
-                  closeSidebar();
-                }}
-              >
-                <Trash2 className="w-3 h-3" />
-                Delete
-              </Button>
+
+            {/* Action Buttons */}
+            <div className="p-4 border-t border-gray-200 bg-gray-50">
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 gap-2 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200"
+                  onClick={(e) => handleDownload(selectedFileMetadata, e)}
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="flex-1 gap-2 text-red-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                  onClick={(e) => {
+                    handleDelete(selectedFileMetadata, e);
+                    closeSidebar();
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </Button>
+              </div>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Overlay for mobile */}
+      {showMetadata && (
+        <div 
+          className="fixed inset-0 bg-black/20 z-40 lg:hidden"
+          onClick={closeSidebar}
+        />
       )}
 
       {/* Recycle Bin Dialog */}
@@ -862,7 +914,7 @@ export function MediaLibrary({ onSelect }) {
               Recycle Bin
             </DialogTitle>
           </DialogHeader>
-          
+
           {deletedFiles.length === 0 ? (
             <div className="py-8 text-center">
               <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
@@ -900,8 +952,8 @@ export function MediaLibrary({ onSelect }) {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => handleRestore(file)}
                             className="h-8 px-2 hover:bg-green-50 hover:text-green-600 hover:border-green-200"
@@ -924,13 +976,13 @@ export function MediaLibrary({ onSelect }) {
               </table>
             </div>
           )}
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowRecycleBin(false)}>
               Close
             </Button>
             {deletedFiles.length > 0 && (
-              <Button 
+              <Button
                 variant="destructive"
                 onClick={() => {
                   if (window.confirm('Permanently delete all items in the recycle bin? This cannot be undone.')) {
