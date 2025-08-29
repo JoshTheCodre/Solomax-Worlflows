@@ -78,7 +78,7 @@ export function Sidebar({ className }) {
                 className={cn(
                   "group flex items-center rounded-md px-3 py-2.5 text-sm font-medium transition-all hover:bg-blue-50/80",
                   pathname === item.href 
-                    ? "bg-blue-50 text-blue-600 font-semibold" 
+                    ? "bg-blue-50 text-black font-semibold" 
                     : "text-gray-700 hover:text-gray-900"
                 )}
               >

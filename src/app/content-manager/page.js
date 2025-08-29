@@ -233,6 +233,34 @@ export default function ContentManagerPage() {
     }
   }
 
+  async function handleMoveToChannel(content, newChannelId) {
+    if (!content) return;
+    
+    try {
+      // Update the content's channel assignment in Firebase
+      const updatedData = newChannelId === 'available' 
+        ? { assignedChannel: null } 
+        : { assignedChannel: newChannelId };
+      
+      await updateDoc(doc(db, 'tasks', content.id), updatedData);
+      
+      // Update local state
+      setSelectedContent(prev => ({ ...prev, assignedChannel: newChannelId === 'available' ? null : newChannelId }));
+      
+      // Refresh content to update the UI
+      fetchContent();
+      
+      const channelName = newChannelId === 'available' 
+        ? 'Available Content' 
+        : channels.find(ch => ch.id === newChannelId)?.name || newChannelId;
+      
+      toast.success(`Content moved to ${channelName}`);
+    } catch (error) {
+      console.error('Error moving content:', error);
+      toast.error('Failed to move content. Please try again.');
+    }
+  }
+
   async function handleSubmit() {
     if (!videoUrl) {
       toast.error('Please enter a video URL');
@@ -395,7 +423,7 @@ export default function ContentManagerPage() {
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Video Details</DialogTitle>
+            <DialogTitle>Content Details</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 py-2">
@@ -404,6 +432,28 @@ export default function ContentManagerPage() {
                 Content Title
               </Label>
               <div className="text-base font-medium mt-1">{selectedContent?.title}</div>
+            </div>
+
+            <div>
+              <Label htmlFor="moveToChannel" className="text-sm font-medium text-gray-500">
+                Move to Channel
+              </Label>
+              <Select 
+                value={selectedContent?.assignedChannel || 'available'} 
+                onValueChange={(value) => handleMoveToChannel(selectedContent, value)}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select channel..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="available">Available Content</SelectItem>
+                  {channels.map(channel => (
+                    <SelectItem key={channel.id} value={channel.id}>
+                      {channel.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>

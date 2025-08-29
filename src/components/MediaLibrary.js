@@ -489,106 +489,122 @@ export function MediaLibrary({ onSelect }) {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredMedia.map((item) => (
                 <Card 
                   key={item.id} 
-                  className="group relative cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-300 bg-white dark:bg-gray-800 border border-gray-200 shadow-sm overflow-hidden rounded-lg" 
+                  className="group relative cursor-pointer hover:shadow-xl transition-all duration-300 bg-white border border-gray-200 shadow-sm overflow-hidden rounded-xl h-80" 
                   onClick={() => onSelect?.(item)}
                   onContextMenu={(e) => handleRightClick(e, item)}
                 >
-                  {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/80 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 flex flex-col items-center justify-center gap-3">
+                  {/* Clean Hover Overlay */}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex items-center justify-center">
                     <div className="flex items-center gap-3">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-12 w-12 p-0 bg-white/90 hover:bg-white text-gray-700 hover:text-blue-600 border border-white/20 rounded-xl shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110"
+                        className="h-10 w-10 p-0 bg-white/90 hover:bg-white text-gray-700 rounded-lg transition-all duration-200"
                         onClick={(e) => handleDownload(item, e)}
                         title="Download"
                       >
-                        <Download className="w-5 h-5" />
+                        <Download className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-12 w-12 p-0 bg-red-500/90 hover:bg-red-500 text-white border border-red-300/20 rounded-xl shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110"
+                        className="h-10 w-10 p-0 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all duration-200"
                         onClick={(e) => handleDelete(item, e)}
                         title="Delete"
                       >
-                        <Trash2 className="w-5 h-5" />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
-                    </div>
-                    <div className="text-white text-sm font-medium bg-black/30 px-3 py-1 rounded-full backdrop-blur-sm">
-                      {item.type.replace('_', ' ').toUpperCase()}
                     </div>
                   </div>
 
-                  <div className="p-4">
-                    {/* File Icon and Info */}
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="p-2.5 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg shadow-sm">
-                        {item.type === MEDIA_TYPES.PROJECT_FILES ? (
-                          <img src="/pp.png" className="w-6 h-6" alt="Project file" />
-                        ) : (
-                          getFileIcon(item)
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100 leading-tight mb-1" title={item.filename}>
-                          {item.filename}
-                        </h3>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                            {formatFileSize(item.size)}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {item.uploadedBy}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Date and Type */}
-                    <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-3">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {formatDate(item.uploadedAt || item.createdAt)}
-                      </div>
-                      <div className="px-2 py-1 bg-gray-100 rounded text-gray-600 font-medium">
-                        {item.type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                      </div>
-                    </div>
-
-                    {/* Preview based on type */}
-                    {item.type === MEDIA_TYPES.VIDEO && (
-                      <div className="mt-3 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                  {/* Content Layout - Fixed Height Structure */}
+                  <div className="h-full flex flex-col">
+                    {/* Preview Section - Fixed Height */}
+                    <div className="h-40 bg-gray-100 rounded-t-xl overflow-hidden relative">
+                      {item.type === MEDIA_TYPES.VIDEO && (
                         <video 
                           src={item.url} 
                           className="w-full h-full object-cover"
                           preload="metadata"
                         />
-                      </div>
-                    )}
-                    
-                    {item.type === MEDIA_TYPES.AUDIO && (
-                      <div className="mt-3 h-10 rounded-lg flex items-center bg-gray-50 border border-gray-200">
-                        <audio controls className="w-full h-6">
-                          <source src={item.url} />
-                        </audio>
-                      </div>
-                    )}
+                      )}
+                      
+                      {item.type === MEDIA_TYPES.AUDIO && (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-100 to-purple-200">
+                          <div className="text-center">
+                            <Music className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                            <span className="text-sm text-purple-700 font-medium">Audio File</span>
+                          </div>
+                        </div>
+                      )}
 
-                    {item.type === MEDIA_TYPES.IMAGE && (
-                      <div className="mt-3 aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                      {(item.type === MEDIA_TYPES.IMAGE || isImageFile(item)) && (
                         <img 
                           src={item.url} 
                           alt={item.filename}
                           className="w-full h-full object-cover"
                           loading="lazy"
                         />
+                      )}
+
+                      {item.type === MEDIA_TYPES.DOCUMENT && (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200">
+                          <div className="text-center">
+                            <FileText className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                            <span className="text-sm text-blue-700 font-medium">Document</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {item.type === MEDIA_TYPES.PROJECT_FILES && (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-100 to-amber-200">
+                          <div className="text-center">
+                            <img src="/pp.png" className="w-8 h-8 mx-auto mb-2" alt="Project file" />
+                            <span className="text-sm text-amber-700 font-medium">Project File</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Default fallback */}
+                      {!['video', 'audio', 'image', 'document', 'project_files'].includes(item.type) && (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                          <div className="text-center">
+                            <File className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                            <span className="text-sm text-gray-700 font-medium">File</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content Info - Remaining Height */}
+                    <div className="flex-1 p-4 flex flex-col justify-between">
+                      {/* Title and Size */}
+                      <div className="mb-3">
+                        <h3 className="font-semibold text-sm text-gray-900 leading-tight mb-2 line-clamp-2" title={item.filename}>
+                          {item.filename}
+                        </h3>
+                        <span className="inline-block text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
+                          {formatFileSize(item.size)}
+                        </span>
                       </div>
-                    )}
+
+                      {/* Footer */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span className="truncate">{item.uploadedBy}</span>
+                          <span>{formatDate(item.uploadedAt || item.createdAt)}</span>
+                        </div>
+                        <div className="text-center">
+                          <span className="inline-block px-2 py-1 bg-gray-900 text-white text-xs font-medium rounded-md">
+                            {item.type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -627,69 +643,68 @@ export function MediaLibrary({ onSelect }) {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredMedia.map((item) => (
                   <Card 
                     key={item.id} 
-                    className="group cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 bg-white dark:bg-gray-800 border-0 shadow-md overflow-hidden" 
+                    className="group relative cursor-pointer hover:shadow-2xl transition-all duration-500 bg-white border border-gray-200/50 shadow-lg overflow-hidden rounded-2xl h-fit" 
                     onClick={() => onSelect?.(item)}
                     onContextMenu={(e) => handleRightClick(e, item)}
                   >
-                    <div className="p-4 space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                            {item.type === MEDIA_TYPES.PROJECT_FILES ? (
-                              <img src="/pp.png" className="w-6 h-6" alt="Project file" />
-                            ) : (
-                              getFileIcon(item)
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h3 className="font-medium text-sm truncate text-gray-900 dark:text-gray-100" title={item.filename}>
-                              {item.filename}
-                            </h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                              {formatFileSize(item.size)}
-                            </p>
-                          </div>
+                    {/* Professional Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/60 to-black/90 opacity-0 group-hover:opacity-100 transition-all duration-500 z-10 flex flex-col justify-end p-6">
+                      <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                        <div className="text-white text-sm font-semibold mb-3 tracking-wide">
+                          {type.replace('_', ' ').toUpperCase()}
                         </div>
-                        
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-center gap-4">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0"
+                            className="h-11 w-11 p-0 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl backdrop-blur-md transition-all duration-300 hover:scale-110"
                             onClick={(e) => handleDownload(item, e)}
                             title="Download"
                           >
-                            <Download className="w-3 h-3" />
+                            <Download className="w-5 h-5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                            className="h-11 w-11 p-0 bg-red-500/80 hover:bg-red-500 text-white border border-red-400/30 rounded-xl backdrop-blur-md transition-all duration-300 hover:scale-110"
                             onClick={(e) => handleDelete(item, e)}
                             title="Delete"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-5 h-5" />
                           </Button>
                         </div>
                       </div>
+                    </div>
 
-                      <div className="space-y-1">
-                        <p className="text-xs text-gray-500">
-                          Uploaded by {item.uploadedBy}
-                        </p>
-                        <p className="text-xs text-gray-400 flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {formatDate(item.uploadedAt || item.createdAt)}
-                        </p>
+                    <div className="p-5">
+                      {/* Header with Icon and Basic Info */}
+                      <div className="flex items-start gap-3 mb-4">
+                        <div className="p-3 bg-gradient-to-br from-gray-100 to-gray-200 border border-gray-300 rounded-xl shadow-sm">
+                          {item.type === MEDIA_TYPES.PROJECT_FILES ? (
+                            <img src="/pp.png" className="w-6 h-6" alt="Project file" />
+                          ) : (
+                            getFileIcon(item)
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-sm text-gray-900 leading-snug mb-2 line-clamp-2" title={item.filename}>
+                            {item.filename}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+                              {formatFileSize(item.size)}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Preview based on type */}
+                      {/* Preview Section */}
                       {item.type === MEDIA_TYPES.VIDEO && (
-                        <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
+                        <div className="mb-4 aspect-video bg-gray-100 rounded-xl overflow-hidden border border-gray-200 shadow-inner">
                           <video 
                             src={item.url} 
                             className="w-full h-full object-cover"
@@ -699,12 +714,42 @@ export function MediaLibrary({ onSelect }) {
                       )}
                       
                       {item.type === MEDIA_TYPES.AUDIO && (
-                        <div className="h-12 rounded-md flex items-center px-3">
-                          <audio controls className="w-full h-8">
+                        <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200">
+                          <audio controls className="w-full h-6">
                             <source src={item.url} />
                           </audio>
                         </div>
                       )}
+
+                      {(item.type === MEDIA_TYPES.IMAGE || isImageFile(item)) && (
+                        <div className="mb-4 aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden border border-gray-200 shadow-inner">
+                          <img 
+                            src={item.url} 
+                            alt={item.filename}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                      )}
+
+                      {/* Footer Information */}
+                      <div className="space-y-3 pt-3 border-t border-gray-100">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <User className="w-3.5 h-3.5" />
+                            <span className="font-medium">{item.uploadedBy}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-gray-500">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>{formatDate(item.uploadedAt || item.createdAt)}</span>
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <span className="inline-block px-3 py-1.5 bg-gradient-to-r from-gray-900 to-gray-700 text-white text-xs font-semibold rounded-full shadow-sm">
+                            {type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </Card>
                 ))}
