@@ -170,11 +170,11 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
             Create New Task
           </DialogTitle>
         </DialogHeader>
-
+{/* new */}
         <form onSubmit={handleSubmit}>
           <Card className=" bg-white/80">
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-0">
                 <div className="space-y-2">
                   <label htmlFor="title" className="text-sm font-medium flex items-center gap-2 text-gray-700">
                     <CheckCircle2 className="w-4 h-4" />
