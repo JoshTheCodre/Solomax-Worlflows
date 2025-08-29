@@ -343,8 +343,8 @@ export function MediaLibrary({ onSelect }) {
   return (
     <div className="flex gap-4 h-full">
       {/* Main Content Area */}
-      <div className={`flex-1 transition-all duration-300 ${showMetadata ? 'mr-80' : ''}`}>
-        <div className="space-y-4">
+      <div className={`flex-1 transition-all duration-300 ${showMetadata ? 'mr-72' : ''} min-w-0`}>
+        <div className="space-y-4 overflow-hidden">
           <div className="flex items-center gap-4">
             <Input
               type="text"
@@ -492,7 +492,10 @@ export function MediaLibrary({ onSelect }) {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className={`grid gap-6 ${showMetadata 
+              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
+              : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+            }`}>
               {filteredMedia.map((item) => (
                 <Card
                   key={item.id}
@@ -646,7 +649,10 @@ export function MediaLibrary({ onSelect }) {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-0">
+              <div className={`grid gap-6 ${showMetadata 
+                ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
+                : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+              }`}>
                 {filteredMedia.map((item) => (
                   <Card
                     key={item.id}
@@ -766,9 +772,9 @@ export function MediaLibrary({ onSelect }) {
 
       {/* Responsive Metadata Sidebar */}
       {showMetadata && selectedFileMetadata && (
-        <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-xl z-50 transform transition-transform duration-300 ease-in-out">
+        <div className="fixed right-0 top-16 h-[calc(100vh-4rem)] w-72 bg-white border-l border-gray-200 shadow-xl z-50 transform transition-transform duration-300 ease-in-out overflow-hidden">
           <div className="h-full flex flex-col">
-            <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-200 flex justify-between items-center">
+            <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
               <h3 className="font-semibold text-lg flex items-center gap-2 text-gray-800">
                 <Eye className="w-5 h-5 text-indigo-600" />
                 File Details
