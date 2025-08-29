@@ -493,59 +493,76 @@ export function MediaLibrary({ onSelect }) {
               {filteredMedia.map((item) => (
                 <Card 
                   key={item.id} 
-                  className="group relative cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 bg-white dark:bg-gray-800 border-0 shadow-md overflow-hidden" 
+                  className="group relative cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-300 bg-white dark:bg-gray-800 border border-gray-200 shadow-sm overflow-hidden rounded-lg" 
                   onClick={() => onSelect?.(item)}
                   onContextMenu={(e) => handleRightClick(e, item)}
                 >
                   {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 flex items-center justify-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-10 w-10 p-0 bg-white/20 hover:bg-white/30 text-white border border-white/20"
-                      onClick={(e) => handleDownload(item, e)}
-                      title="Download"
-                    >
-                      <Download className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-10 w-10 p-0 bg-red-500/80 hover:bg-red-500 text-white border border-red-300/20"
-                      onClick={(e) => handleDelete(item, e)}
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/80 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 flex flex-col items-center justify-center gap-3">
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-12 w-12 p-0 bg-white/90 hover:bg-white text-gray-700 hover:text-blue-600 border border-white/20 rounded-xl shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110"
+                        onClick={(e) => handleDownload(item, e)}
+                        title="Download"
+                      >
+                        <Download className="w-5 h-5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-12 w-12 p-0 bg-red-500/90 hover:bg-red-500 text-white border border-red-300/20 rounded-xl shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110"
+                        onClick={(e) => handleDelete(item, e)}
+                        title="Delete"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </Button>
+                    </div>
+                    <div className="text-white text-sm font-medium bg-black/30 px-3 py-1 rounded-full backdrop-blur-sm">
+                      {item.type.replace('_', ' ').toUpperCase()}
+                    </div>
                   </div>
 
-                  <div className="p-3 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-gray-50 dark:bg-gray-700/50 rounded">
+                  <div className="p-4">
+                    {/* File Icon and Info */}
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="p-2.5 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-lg shadow-sm">
                         {item.type === MEDIA_TYPES.PROJECT_FILES ? (
-                          <img src="/pp.png" className="w-5 h-5" alt="Project file" />
+                          <img src="/pp.png" className="w-6 h-6" alt="Project file" />
                         ) : (
                           getFileIcon(item)
                         )}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-medium text-sm truncate text-gray-900 dark:text-gray-100 leading-tight" title={item.filename}>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100 leading-tight mb-1" title={item.filename}>
                           {item.filename}
                         </h3>
-                        <div className="flex items-center justify-between mt-1">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
                             {formatFileSize(item.size)}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {formatDate(item.uploadedAt || item.createdAt)}
-                          </p>
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {item.uploadedBy}
+                          </span>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Date and Type */}
+                    <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-3">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {formatDate(item.uploadedAt || item.createdAt)}
+                      </div>
+                      <div className="px-2 py-1 bg-gray-100 rounded text-gray-600 font-medium">
+                        {item.type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                       </div>
                     </div>
 
                     {/* Preview based on type */}
                     {item.type === MEDIA_TYPES.VIDEO && (
-                      <div className="aspect-video bg-gray-100 rounded overflow-hidden">
+                      <div className="mt-3 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
                         <video 
                           src={item.url} 
                           className="w-full h-full object-cover"
@@ -555,10 +572,21 @@ export function MediaLibrary({ onSelect }) {
                     )}
                     
                     {item.type === MEDIA_TYPES.AUDIO && (
-                      <div className="h-8 rounded flex items-center">
+                      <div className="mt-3 h-10 rounded-lg flex items-center bg-gray-50 border border-gray-200">
                         <audio controls className="w-full h-6">
                           <source src={item.url} />
                         </audio>
+                      </div>
+                    )}
+
+                    {item.type === MEDIA_TYPES.IMAGE && (
+                      <div className="mt-3 aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                        <img 
+                          src={item.url} 
+                          alt={item.filename}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
                       </div>
                     )}
                   </div>

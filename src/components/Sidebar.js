@@ -61,29 +61,38 @@ export function Sidebar({ className }) {
       
       <div className="flex-1 px-3 py-4 overflow-y-auto">
         <nav className="space-y-1">
-          {items.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "group flex items-center rounded-md px-3 py-2.5 text-sm font-medium transition-all hover:bg-blue-50/80",
-                pathname === item.href 
-                  ? "bg-blue-50 text-blue-600 font-semibold border-r-2 border-blue-600" 
-                  : "text-gray-700 hover:text-gray-900"
-              )}
-            >
-              <item.icon className={cn(
-                "mr-3 h-4 w-4 flex-shrink-0",
-                pathname === item.href 
-                  ? "text-blue-600" 
-                  : "text-gray-500"
-              )} />
-              <span className="truncate">{item.name}</span>
-              {pathname === item.href && (
-                <div className="ml-auto w-1 h-1 bg-blue-600 rounded-full"></div>
-              )}
-            </Link>
-          ))}
+          {items.map((item, index) => {
+            const iconColors = [
+              'text-blue-500',     // Home
+              'text-green-500',    // Tasks  
+              'text-purple-500',   // Media
+              'text-orange-500',   // Team
+              'text-red-500',      // Content Mgr
+              'text-indigo-500',   // Content Calendar
+            ];
+            
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "group flex items-center rounded-md px-3 py-2.5 text-sm font-medium transition-all hover:bg-blue-50/80",
+                  pathname === item.href 
+                    ? "bg-blue-50 text-blue-600 font-semibold" 
+                    : "text-gray-700 hover:text-gray-900"
+                )}
+              >
+                <item.icon className={cn(
+                  "mr-3 h-4 w-4 flex-shrink-0",
+                  iconColors[index] || "text-gray-500"
+                )} />
+                <span className="truncate">{item.name}</span>
+                {pathname === item.href && (
+                  <div className="ml-auto w-1 h-1 bg-blue-600 rounded-full"></div>
+                )}
+              </Link>
+            );
+          })}
         </nav>
       </div>
       
