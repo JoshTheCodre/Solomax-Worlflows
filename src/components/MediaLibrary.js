@@ -51,9 +51,22 @@ export function MediaLibrary({ onSelect }) {
 
   // Helper function to check if a file is an image
   const isImageFile = (item) => {
-    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff'];
-    const extension = (item.filename || '').split('.').pop()?.toLowerCase();
-    return imageExtensions.includes(extension);
+    if (!item) return false;
+    
+    // Check by file extension
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif'];
+    const filename = item.filename || item.original_filename || '';
+    const extension = filename.split('.').pop()?.toLowerCase();
+    const isImageByExtension = imageExtensions.includes(extension);
+    
+    // Check by MIME type
+    const mimeType = (item.type || item.contentType || '').toLowerCase();
+    const isImageByMime = mimeType.startsWith('image/');
+    
+    // Check by explicit type
+    const isImageByType = item.type === MEDIA_TYPES.IMAGE;
+    
+    return isImageByExtension || isImageByMime || isImageByType;
   };
 
   // Get all media of current type, including correcting image types
@@ -480,65 +493,59 @@ export function MediaLibrary({ onSelect }) {
               {filteredMedia.map((item) => (
                 <Card 
                   key={item.id} 
-                  className="group cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 bg-white dark:bg-gray-800 border-0 shadow-md overflow-hidden" 
+                  className="group relative cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 bg-white dark:bg-gray-800 border-0 shadow-md overflow-hidden" 
                   onClick={() => onSelect?.(item)}
                   onContextMenu={(e) => handleRightClick(e, item)}
                 >
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                          {item.type === MEDIA_TYPES.PROJECT_FILES ? (
-                            <img src="/pp.png" className="w-6 h-6" alt="Project file" />
-                          ) : (
-                            getFileIcon(item)
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-medium text-sm truncate text-gray-900 dark:text-gray-100" title={item.filename}>
-                            {item.filename}
-                          </h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 flex items-center justify-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-10 w-10 p-0 bg-white/20 hover:bg-white/30 text-white border border-white/20"
+                      onClick={(e) => handleDownload(item, e)}
+                      title="Download"
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-10 w-10 p-0 bg-red-500/80 hover:bg-red-500 text-white border border-red-300/20"
+                      onClick={(e) => handleDelete(item, e)}
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-gray-50 dark:bg-gray-700/50 rounded">
+                        {item.type === MEDIA_TYPES.PROJECT_FILES ? (
+                          <img src="/pp.png" className="w-5 h-5" alt="Project file" />
+                        ) : (
+                          getFileIcon(item)
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-medium text-sm truncate text-gray-900 dark:text-gray-100 leading-tight" title={item.filename}>
+                          {item.filename}
+                        </h3>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             {formatFileSize(item.size)}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {formatDate(item.uploadedAt || item.createdAt)}
                           </p>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={(e) => handleDownload(item, e)}
-                          title="Download"
-                        >
-                          <Download className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                          onClick={(e) => handleDelete(item, e)}
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <p className="text-xs text-gray-500">
-                        Uploaded by {item.uploadedBy}
-                      </p>
-                      <p className="text-xs text-gray-400 flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {formatDate(item.uploadedAt || item.createdAt)}
-                      </p>
                     </div>
 
                     {/* Preview based on type */}
                     {item.type === MEDIA_TYPES.VIDEO && (
-                      <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
+                      <div className="aspect-video bg-gray-100 rounded overflow-hidden">
                         <video 
                           src={item.url} 
                           className="w-full h-full object-cover"
@@ -548,8 +555,8 @@ export function MediaLibrary({ onSelect }) {
                     )}
                     
                     {item.type === MEDIA_TYPES.AUDIO && (
-                      <div className="h-12 rounded-md flex items-center px-3">
-                        <audio controls className="w-full h-8">
+                      <div className="h-8 rounded flex items-center">
+                        <audio controls className="w-full h-6">
                           <source src={item.url} />
                         </audio>
                       </div>

@@ -14,6 +14,7 @@ import {
   LogOut,
   User,
   FolderOpenIcon,
+  Calendar,
 } from 'lucide-react';
 import { Avatar } from "@/components/ui/avatar";
 import {
@@ -31,6 +32,7 @@ const navigation = [
   { name: 'Media', href: '/media', icon: FilmIcon },
   { name: 'Team', href: '/team', icon: UsersIcon },
   { name: 'Content Mgr', href: '/content-manager', icon: FolderOpenIcon },
+  { name: 'Content Calendar', href: '/content-calendar', icon: Calendar },
 ];
 
 const adminNavigation = [
@@ -39,6 +41,7 @@ const adminNavigation = [
   { name: 'Media', href: '/media', icon: FilmIcon },
   { name: 'Team', href: '/team', icon: UsersIcon },
   { name: 'Content Mgr', href: '/admin/content-manager', icon: FolderOpenIcon },
+  { name: 'Content Calendar', href: '/content-calendar', icon: Calendar },
 ];
 
 export function Sidebar({ className }) {
@@ -49,60 +52,57 @@ export function Sidebar({ className }) {
   const items = isAdmin ? adminNavigation : navigation;
 
   return (
-    <div className={cn("flex flex-col h-full bg-white", className)}>
-      <div className="px-6 py-6 mb-4 border-b shrink-0">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent tracking-wide font-sans">
+    <div className={cn("flex flex-col bg-white border-r border-gray-200", className)} style={{ height: '100vh' }}>
+      <div className="px-4 py-4 border-b border-gray-200 flex items-center" style={{ height: '64px' }}>
+        <h1 className="text-xl font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent tracking-wide">
           SOLOMAX
         </h1>
-        <p className="text-sm text-black mt-1 font-medium">Youtube Workflows</p>
       </div>
-      <div className="flex-1 space-y-4 px-3 overflow-y-auto">
-        <nav className="space-y-2">
+      
+      <div className="flex-1 px-3 py-4 overflow-y-auto">
+        <nav className="space-y-1">
           {items.map((item) => (
             <Link
               key={item.name}
               href={item.href}
               className={cn(
-                "group flex items-center rounded-lg px-4 py-3 text-base font-semibold transition-all hover:bg-blue-50/60",
+                "group flex items-center rounded-md px-3 py-2.5 text-sm font-medium transition-all hover:bg-blue-50/80",
                 pathname === item.href 
-                  ? "bg-blue-50 text-blue-500 font-bold" 
-                  : "text-black hover:text-black"
+                  ? "bg-blue-50 text-blue-600 font-semibold border-r-2 border-blue-600" 
+                  : "text-gray-700 hover:text-gray-900"
               )}
             >
-              <span className="flex items-center flex-1">
-                <item.icon className={cn(
-                  "mr-3 h-5 w-5",
-                  pathname === item.href 
-                    ? "text-blue-500" 
-                    : "text-black"
-                )} />
-                {item.name}
-              </span>
-              <span className="ml-auto opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-black group-hover:text-blue-500">
-                →
-              </span>
+              <item.icon className={cn(
+                "mr-3 h-4 w-4 flex-shrink-0",
+                pathname === item.href 
+                  ? "text-blue-600" 
+                  : "text-gray-500"
+              )} />
+              <span className="truncate">{item.name}</span>
+              {pathname === item.href && (
+                <div className="ml-auto w-1 h-1 bg-blue-600 rounded-full"></div>
+              )}
             </Link>
           ))}
         </nav>
       </div>
       
-      <div className="mt-auto border-t pt-4 px-6">
+      <div className="border-t border-gray-200 p-3">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <div className="w-full flex justify-center space-x-3 hover:bg-blue-50 p-2 rounded-lg transition-all">
-              <Avatar className="h-9 w-9 bg-gray-100 justify-center items-center">
-                <User className="h-5 w-5" />
+            <button className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-gray-50 transition-colors">
+              <Avatar className="h-8 w-8 bg-gray-100">
+                <User className="h-4 w-4 text-gray-600" />
               </Avatar>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-medium text-gray-900">{user?.displayName || 'Admin User'}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
+              <div className="flex-1 text-left min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{user?.displayName || 'Admin User'}</p>
+                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
               </div>
-            </div>
+            </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" side="right" sideOffset={20}>
+          <DropdownMenuContent className="w-56" align="end" side="right" sideOffset={8}>
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-    
             <DropdownMenuItem 
               className="text-red-600 focus:text-red-700"
               onClick={logout}
