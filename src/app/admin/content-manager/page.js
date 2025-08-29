@@ -343,7 +343,7 @@ export default function ContentManagerPage() {
     return (
       <Card
         key={item.id}
-        className={`flex justify-center align-middle mb-1 bg-blue-700 cursor-grab hover:shadow-xl transition-all duration-300 bg-white border-0 shadow-sm border-l-4  ${channelBorderColor} relative h-14 rounded-md ${
+        className={`flex justify-center align-middle mb-1 bg-blue-700 cursor-grab hover:shadow-xl transition-all duration-300 bg-white border-0 shadow-sm border-l-4  ${channelBorderColor} relative h-14 rounded-sm ${
           isAnimating ? 'animate-pulse scale-50 opacity-20 transform translate-x-8 translate-y-2 rotate-12' : ''
         }`}
         draggable={isDraggable}
@@ -418,11 +418,11 @@ export default function ContentManagerPage() {
         
         {/* Available Content Column */}
         <div 
-          className="bg-white rounded-lg border border-gray-200 flex flex-col"
+          className="bg-white rounded-sm border border-gray-200 flex flex-col"
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, null)}
         >
-          <div className="p-3 border-b border-gray-100 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-t-lg">
+          <div className="p-3 border-b border-gray-100 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-t-sm">
             <h3 className="font-semibold whitespace-nowrap">Available Content</h3>
             <p className="text-xs opacity-80 mt-1">{availableContent.length} items</p>
           </div>
@@ -448,11 +448,11 @@ export default function ContentManagerPage() {
         {channels.map((channel) => (
           <div 
             key={channel.id}
-            className="bg-white rounded-lg border border-gray-200 flex flex-col"
+            className="bg-white rounded-sm border border-gray-200 flex flex-col"
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, channel.id)}
           >
-            <div className={`p-3 border-b border-gray-100 rounded-t-lg ${channel.color}`}>
+            <div className={`p-3 border-b border-gray-100 rounded-t-sm ${channel.color}`}>
               <h3 className="font-semibold whitespace-nowrap">{channel.name}</h3>
               <p className="text-xs opacity-80 mt-1">{channelContent[channel.id].length} items</p>
             </div>

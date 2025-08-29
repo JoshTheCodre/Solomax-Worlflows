@@ -18,7 +18,7 @@ import useAuthStore from '@/lib/store';
 
 export function MediaLibrary({ onSelect }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState(MEDIA_TYPES.PROJECT_FILES);
+  const [activeTab, setActiveTab] = useState('all');
   const [showMetadata, setShowMetadata] = useState(false);
   const [selectedFileMetadata, setSelectedFileMetadata] = useState(null);
   const [sidebarPosition, setSidebarPosition] = useState({ right: 20, top: 100 });
@@ -59,7 +59,10 @@ export function MediaLibrary({ onSelect }) {
   // Get all media of current type, including correcting image types
   let mediaOfType;
   
-  if (activeTab === MEDIA_TYPES.IMAGE) {
+  if (activeTab === 'all') {
+    // For All tab, get all media files
+    mediaOfType = Array.isArray(media) ? media : [];
+  } else if (activeTab === MEDIA_TYPES.IMAGE) {
     // For Images tab, get all files with image extensions from all media types
     const allMedia = Array.isArray(media) ? media : [];
     mediaOfType = allMedia.filter(item => isImageFile(item)).map(item => ({
@@ -293,6 +296,10 @@ export function MediaLibrary({ onSelect }) {
   };
 
   const getTabCount = (type) => {
+    if (type === 'all') {
+      return Array.isArray(media) ? media.length : 0;
+    }
+    
     const mediaForType = getMediaByType(type);
     
     // For Documents tab, exclude image files from count
@@ -302,13 +309,8 @@ export function MediaLibrary({ onSelect }) {
     
     // For Images tab, include files with image extensions
     if (type === MEDIA_TYPES.IMAGE) {
-      const allMedia = getMediaByType(MEDIA_TYPES.IMAGE);
-      const additionalImages = Object.values(MEDIA_TYPES)
-        .filter(mediaType => mediaType !== MEDIA_TYPES.IMAGE)
-        .flatMap(mediaType => getMediaByType(mediaType))
-        .filter(item => isImageFile(item));
-      
-      return allMedia.length + additionalImages.length;
+      const allMedia = Array.isArray(media) ? media : [];
+      return allMedia.filter(item => isImageFile(item)).length;
     }
     
     return mediaForType.length;
@@ -380,8 +382,18 @@ export function MediaLibrary({ onSelect }) {
         </div>
       </div>
 
-      <Tabs defaultValue={MEDIA_TYPES.PROJECT_FILES} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5 p-1 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg gap-1">
+      <Tabs defaultValue="all" onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-6 p-1 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg gap-1">
+          <TabsTrigger 
+            value="all" 
+            className="flex items-center gap-2 px-3 py-2 data-[state=active]:bg-gray-50 data-[state=active]:text-gray-700 data-[state=active]:border-2 data-[state=active]:border-dashed data-[state=active]:border-gray-300 relative group transition-all duration-200"
+          >
+            <Folder className="w-4 h-4 text-gray-700 group-data-[state=active]:text-gray-500" />
+            <span className="hidden sm:inline">All</span>
+            <span className="bg-gray-100 text-gray-700 group-data-[state=active]:bg-gray-200 text-xs px-2 py-0.5 rounded-full transition-colors">
+              {getTabCount('all')}
+            </span>
+          </TabsTrigger>
           <TabsTrigger 
             value={MEDIA_TYPES.PROJECT_FILES} 
             className="flex items-center gap-2 px-3 py-2 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-700 data-[state=active]:border-2 data-[state=active]:border-dashed data-[state=active]:border-purple-300 relative group transition-all duration-200"
@@ -390,26 +402,6 @@ export function MediaLibrary({ onSelect }) {
             <span className="hidden sm:inline">Project files</span>
             <span className="bg-purple-100 text-purple-700 group-data-[state=active]:bg-purple-200 text-xs px-2 py-0.5 rounded-full transition-colors">
               {getTabCount(MEDIA_TYPES.PROJECT_FILES)}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value={MEDIA_TYPES.IMAGE} 
-            className="flex items-center gap-2 px-3 py-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-2 data-[state=active]:border-dashed data-[state=active]:border-blue-300 relative group transition-all duration-200"
-          >
-            <FileImage className="w-4 h-4 text-gray-700 group-data-[state=active]:text-blue-500" />
-            <span className="hidden sm:inline">Images</span>
-            <span className="bg-blue-100 text-blue-700 group-data-[state=active]:bg-blue-200 text-xs px-2 py-0.5 rounded-full transition-colors">
-              {getTabCount(MEDIA_TYPES.IMAGE)}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value={MEDIA_TYPES.AUDIO} 
-            className="flex items-center gap-2 px-3 py-2 data-[state=active]:bg-green-50 data-[state=active]:text-green-700 data-[state=active]:border-2 data-[state=active]:border-dashed data-[state=active]:border-green-300 relative group transition-all duration-200"
-          >
-            <Music className="w-4 h-4 text-gray-700 group-data-[state=active]:text-green-700" />
-            <span className="hidden sm:inline">Audio</span>
-            <span className="bg-green-100 text-green-700 group-data-[state=active]:bg-green-200 text-xs px-2 py-0.5 rounded-full transition-colors">
-              {getTabCount(MEDIA_TYPES.AUDIO)}
             </span>
           </TabsTrigger>
           <TabsTrigger 
@@ -423,6 +415,26 @@ export function MediaLibrary({ onSelect }) {
             </span>
           </TabsTrigger>
           <TabsTrigger 
+            value={MEDIA_TYPES.AUDIO} 
+            className="flex items-center gap-2 px-3 py-2 data-[state=active]:bg-green-50 data-[state=active]:text-green-700 data-[state=active]:border-2 data-[state=active]:border-dashed data-[state=active]:border-green-300 relative group transition-all duration-200"
+          >
+            <Music className="w-4 h-4 text-gray-700 group-data-[state=active]:text-green-700" />
+            <span className="hidden sm:inline">Audio</span>
+            <span className="bg-green-100 text-green-700 group-data-[state=active]:bg-green-200 text-xs px-2 py-0.5 rounded-full transition-colors">
+              {getTabCount(MEDIA_TYPES.AUDIO)}
+            </span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value={MEDIA_TYPES.IMAGE} 
+            className="flex items-center gap-2 px-3 py-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-2 data-[state=active]:border-dashed data-[state=active]:border-blue-300 relative group transition-all duration-200"
+          >
+            <FileImage className="w-4 h-4 text-gray-700 group-data-[state=active]:text-blue-500" />
+            <span className="hidden sm:inline">Images</span>
+            <span className="bg-blue-100 text-blue-700 group-data-[state=active]:bg-blue-200 text-xs px-2 py-0.5 rounded-full transition-colors">
+              {getTabCount(MEDIA_TYPES.IMAGE)}
+            </span>
+          </TabsTrigger>
+          <TabsTrigger 
             value={MEDIA_TYPES.DOCUMENT} 
             className="flex items-center gap-2 px-3 py-2 data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700 data-[state=active]:border-2 data-[state=active]:border-dashed data-[state=active]:border-amber-300 relative group transition-all duration-200"
           >
@@ -433,6 +445,121 @@ export function MediaLibrary({ onSelect }) {
             </span>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent key="all" value="all" className="mt-4">
+          {loading ? (
+            <div className="text-center p-12">
+              <div className="relative w-16 h-16 mx-auto mb-4">
+                <div className="absolute top-0 left-0 w-full h-full rounded-full border-4 border-gray-200 dark:border-gray-700"></div>
+                <div className="absolute top-0 left-0 w-full h-full rounded-full border-4 border-t-transparent border-indigo-500 animate-spin"></div>
+              </div>
+              <p className="text-gray-600 dark:text-gray-300 font-medium">Loading media...</p>
+            </div>
+          ) : filteredMedia.length === 0 ? (
+            <div className="text-center p-12 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
+              <div className="w-16 h-16 mx-auto mb-4 bg-white dark:bg-gray-700 rounded-2xl flex items-center justify-center shadow-sm">
+                <Folder className="w-6 h-6 text-gray-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                {searchQuery ? 'No matches found' : 'No files yet'}
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">
+                {searchQuery 
+                  ? `No files found matching "${searchQuery}"` 
+                  : `No files have been uploaded yet`
+                }
+              </p>
+              {!searchQuery && (
+                <p className="text-sm text-gray-400 dark:text-gray-500">
+                  Drag and drop your files anywhere or use the upload button above
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredMedia.map((item) => (
+                <Card 
+                  key={item.id} 
+                  className="group cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 bg-white dark:bg-gray-800 border-0 shadow-md overflow-hidden" 
+                  onClick={() => onSelect?.(item)}
+                  onContextMenu={(e) => handleRightClick(e, item)}
+                >
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                          {item.type === MEDIA_TYPES.PROJECT_FILES ? (
+                            <img src="/pp.png" className="w-6 h-6" alt="Project file" />
+                          ) : (
+                            getFileIcon(item)
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-medium text-sm truncate text-gray-900 dark:text-gray-100" title={item.filename}>
+                            {item.filename}
+                          </h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {formatFileSize(item.size)}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={(e) => handleDownload(item, e)}
+                          title="Download"
+                        >
+                          <Download className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                          onClick={(e) => handleDelete(item, e)}
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-xs text-gray-500">
+                        Uploaded by {item.uploadedBy}
+                      </p>
+                      <p className="text-xs text-gray-400 flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {formatDate(item.uploadedAt || item.createdAt)}
+                      </p>
+                    </div>
+
+                    {/* Preview based on type */}
+                    {item.type === MEDIA_TYPES.VIDEO && (
+                      <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
+                        <video 
+                          src={item.url} 
+                          className="w-full h-full object-cover"
+                          preload="metadata"
+                        />
+                      </div>
+                    )}
+                    
+                    {item.type === MEDIA_TYPES.AUDIO && (
+                      <div className="h-12 rounded-md flex items-center px-3">
+                        <audio controls className="w-full h-8">
+                          <source src={item.url} />
+                        </audio>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
         {Object.values(MEDIA_TYPES).map((type) => (
           <TabsContent key={type} value={type} className="mt-4">
