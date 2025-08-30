@@ -724,11 +724,6 @@ export function MediaLibrary({ onSelect }) {
                           <span className="truncate min-w-0 flex-shrink">{item.uploadedBy}</span>
                           <span className="flex-shrink-0">{formatDate(item.uploadedAt || item.createdAt)}</span>
                         </div>
-                        <div className="text-center">
-                          <span className="inline-block px-2 py-0.5 bg-gray-900 text-white text-xs font-medium rounded">
-                            {(item.type || 'file').split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                          </span>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -901,11 +896,6 @@ export function MediaLibrary({ onSelect }) {
                           <div className="flex flex-wrap items-center justify-between gap-1 text-xs text-gray-500">
                             <span className="truncate min-w-0 flex-shrink">{item.uploadedBy}</span>
                             <span className="flex-shrink-0">{formatDate(item.uploadedAt || item.createdAt)}</span>
-                          </div>
-                          <div className="text-center">
-                            <span className="inline-block px-2 py-0.5 bg-gray-900 text-white text-xs font-medium rounded">
-                              {(item.type || 'file').split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                            </span>
                           </div>
                         </div>
                       </div>

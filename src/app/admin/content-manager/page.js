@@ -32,6 +32,8 @@ export default function ContentManagerPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [draggedItem, setDraggedItem] = useState(null);
   const [animatingCard, setAnimatingCard] = useState(null);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const router = useRouter();
 
   const channels = [
@@ -325,6 +327,65 @@ export default function ContentManagerPage() {
     }
   }
 
+  const handleSelectItem = (item, e) => {
+    e.stopPropagation();
+    setSelectedItems(prev => {
+      const isSelected = prev.some(selected => selected.id === item.id);
+      if (isSelected) {
+        return prev.filter(selected => selected.id !== item.id);
+      } else {
+        return [...prev, item];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    // Get all available content across all channels
+    const allContent = [
+      ...availableContent,
+      ...Object.values(channelContent).flat()
+    ];
+    
+    if (selectedItems.length === allContent.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems([...allContent]);
+    }
+  };
+
+  const handleMoveSelectedToPosted = async () => {
+    if (selectedItems.length === 0) return;
+    
+    setIsSubmitting(true);
+    try {
+      for (const item of selectedItems) {
+        const originalChannel = item.assignedChannel;
+        
+        await updateDoc(doc(db, 'tasks', item.id), {
+          videoUrl: '', // Empty URL for bulk posting
+          videoPosted: true,
+          postedAt: new Date(),
+          originalChannel: originalChannel
+        });
+      }
+
+      toast.success(`${selectedItems.length} items moved to posted`);
+      setSelectedItems([]);
+      setIsSelectionMode(false);
+      fetchContent();
+    } catch (error) {
+      console.error('Error moving items to posted:', error);
+      toast.error('Failed to move some items to posted');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const exitSelectionMode = () => {
+    setIsSelectionMode(false);
+    setSelectedItems([]);
+  };
+
   // Format date helper - Updated to MM/DD/YY format
   function formatDate(timestamp) {
     if (!timestamp) return 'No date';
@@ -337,31 +398,52 @@ export default function ContentManagerPage() {
   }
 
   // Render content card component
-  function ContentCard({ item, isDraggable = true, channelBorderColor = 'border-l-gray-300' }) {
+  function ContentCard({ item, isDraggable = true, dotColor = 'bg-gray-400' }) {
     const isAnimating = animatingCard === item.id;
+    const isSelected = selectedItems.some(selected => selected.id === item.id);
     
     return (
       <Card
         key={item.id}
-        className={`flex justify-center align-middle mb-1 bg-blue-700 cursor-grab hover:shadow-xl transition-all duration-300 bg-white border-0 shadow-sm border-l-4  ${channelBorderColor} relative h-14 rounded-sm ${
+        className={`flex justify-center align-middle mb-1 cursor-grab hover:shadow-xl transition-all duration-300 bg-white border-0 shadow-sm relative h-14 rounded-sm ${
           isAnimating ? 'animate-pulse scale-50 opacity-20 transform translate-x-8 translate-y-2 rotate-12' : ''
-        }`}
-        draggable={isDraggable}
-        onDragStart={(e) => handleDragStart(e, item)}
+        } ${isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`}
+        draggable={isDraggable && !isSelectionMode}
+        onDragStart={(e) => !isSelectionMode && handleDragStart(e, item)}
         onContextMenu={(e) => handleRightClick(e, item)}
+        onClick={() => {
+          if (isSelectionMode) {
+            handleSelectItem(item, { stopPropagation: () => {} });
+          } else {
+            openDetailDialog(item);
+          }
+        }}
       >
-        {isDraggable && (
-          <div className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full animate-ping opacity-75"></div>
+        {/* Selection Checkbox */}
+        {isSelectionMode && (
+          <div className="absolute top-2 left-2 z-10">
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={(e) => handleSelectItem(item, e)}
+              className="w-3 h-3 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         )}
-        {isDraggable && (
-          <div className="absolute top-1 right-1 w-2 h-2 bg-blue-600 rounded-full"></div>
+
+        {isDraggable && !isSelectionMode && (
+          <div className={`absolute top-1 right-1 w-2 h-2 ${dotColor} rounded-full animate-ping opacity-75`}></div>
+        )}
+        {isDraggable && !isSelectionMode && (
+          <div className={`absolute top-1 right-1 w-2 h-2 ${dotColor.replace('bg-', 'bg-').replace('-400', '-600')} rounded-full`}></div>
         )}
         
-       <div className="flex flex-col justify-start py-2 gap-1  px-2 bg-500">
-          <h4 className="text-xs font-bold  " title={item.title}>
+       <div className="flex flex-col justify-start py-2 gap-1 px-2">
+          <h4 className="text-xs font-bold" title={item.title}>
             {item.title}
           </h4>
-          <div className="flex items-center gap-1.5 ">
+          <div className="flex items-center gap-1.5">
             <Calendar className="w-3 h-3 text-gray-600 flex-shrink-0" />
             <span className="text-xs font-semibold text-gray-700 antialiased tracking-wide">
               {formatDate(item.completedAt || item.createdAt)}
@@ -383,6 +465,41 @@ export default function ContentManagerPage() {
           <p className="text-gray-600 mt-1">Manage content across all channels</p>
         </div>
         <div className="flex gap-3">
+          {isSelectionMode && (
+            <>
+              <Button
+                variant="outline"
+                onClick={handleSelectAll}
+                className="hover:bg-blue-50 hover:text-blue-600"
+              >
+                {selectedItems.length === [...availableContent, ...Object.values(channelContent).flat()].length ? 'Deselect All' : 'Select All'}
+              </Button>
+              <Button
+                variant="default"
+                onClick={handleMoveSelectedToPosted}
+                disabled={selectedItems.length === 0 || isSubmitting}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isSubmitting ? 'Moving...' : `Move to Posted (${selectedItems.length})`}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={exitSelectionMode}
+                className="hover:bg-gray-100"
+              >
+                Cancel
+              </Button>
+            </>
+          )}
+          {!isSelectionMode && (
+            <Button
+              variant="outline"
+              onClick={() => setIsSelectionMode(true)}
+              className="hover:bg-blue-50 hover:text-blue-600"
+            >
+              Select Items
+            </Button>
+          )}
           <Button
             variant="default"
             onClick={openPostedDialog}
@@ -437,7 +554,7 @@ export default function ContentManagerPage() {
                 <ContentCard 
                   key={item.id} 
                   item={item} 
-                  channelBorderColor="border-l-gray-400"
+                  dotColor="bg-gray-400"
                 />
               ))
             )}
@@ -467,7 +584,11 @@ export default function ContentManagerPage() {
                   <ContentCard 
                     key={item.id} 
                     item={item} 
-                    channelBorderColor={channel.borderColor}
+                    dotColor={channel.color.includes('purple') ? 'bg-purple-400' : 
+                             channel.color.includes('blue') ? 'bg-blue-400' :
+                             channel.color.includes('green') ? 'bg-green-400' :
+                             channel.color.includes('red') ? 'bg-red-400' :
+                             channel.color.includes('amber') ? 'bg-amber-400' : 'bg-gray-400'}
                   />
                 ))
               )}
