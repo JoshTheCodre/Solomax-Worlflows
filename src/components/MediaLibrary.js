@@ -27,6 +27,9 @@ export function MediaLibrary({ onSelect }) {
   const [deletedFiles, setDeletedFiles] = useState([]);
   const [availableContent, setAvailableContent] = useState([]);
   const [contentByChannel, setContentByChannel] = useState({});
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  
   const handleRightClick = (e, item) => {
     e.preventDefault();
     e.stopPropagation();
@@ -43,6 +46,7 @@ export function MediaLibrary({ onSelect }) {
     media,
     loading,
     error,
+    uploads,
     getMediaByType,
     deleteMedia,
     uploadFiles,
@@ -136,7 +140,23 @@ export function MediaLibrary({ onSelect }) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    await uploadFiles(files, user);
+    // Prevent duplicate uploads by checking if files are already uploading
+    const existingUploads = uploads || [];
+    const newFiles = Array.from(files).filter(file => 
+      !existingUploads.some(upload => 
+        upload.filename === file.name && 
+        upload.size === file.size &&
+        (upload.status === 'uploading' || upload.status === 'completed')
+      )
+    );
+
+    if (newFiles.length === 0) {
+      toast.info('Selected files are already uploading or uploaded');
+      e.target.value = ''; // Reset input
+      return;
+    }
+
+    await uploadFiles(newFiles, user);
     e.target.value = ''; // Reset input
   };
 
@@ -271,6 +291,50 @@ export function MediaLibrary({ onSelect }) {
     }
   };
 
+  const handleSelectItem = (item, e) => {
+    e.stopPropagation();
+    setSelectedItems(prev => {
+      const isSelected = prev.some(selected => selected.id === item.id);
+      if (isSelected) {
+        return prev.filter(selected => selected.id !== item.id);
+      } else {
+        return [...prev, item];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedItems.length === filteredMedia.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems([...filteredMedia]);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedItems.length === 0) return;
+    
+    const confirmDelete = window.confirm(`Move ${selectedItems.length} items to recycle bin?`);
+    if (confirmDelete) {
+      try {
+        for (const item of selectedItems) {
+          await handleDelete(item);
+        }
+        setSelectedItems([]);
+        setIsSelectionMode(false);
+        toast.success(`${selectedItems.length} items moved to recycle bin`);
+      } catch (error) {
+        console.error('Error deleting selected items:', error);
+        toast.error('Failed to delete some items');
+      }
+    }
+  };
+
+  const exitSelectionMode = () => {
+    setIsSelectionMode(false);
+    setSelectedItems([]);
+  };
+
   const handleRestore = (item) => {
     // Remove from deleted files
     setDeletedFiles(prev => prev.filter(f => f.id !== item.id));
@@ -378,6 +442,41 @@ export function MediaLibrary({ onSelect }) {
             accept="*/*"
           />
           <div className="flex gap-2">
+            {isSelectionMode && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={handleSelectAll}
+                  className="hover:bg-blue-50 hover:text-blue-600"
+                >
+                  {selectedItems.length === filteredMedia.length ? 'Deselect All' : 'Select All'}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteSelected}
+                  disabled={selectedItems.length === 0}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Delete Selected ({selectedItems.length})
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={exitSelectionMode}
+                  className="hover:bg-gray-100"
+                >
+                  Cancel
+                </Button>
+              </>
+            )}
+            {!isSelectionMode && (
+              <Button
+                variant="outline"
+                onClick={() => setIsSelectionMode(true)}
+                className="hover:bg-blue-50 hover:text-blue-600"
+              >
+                Select
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => setShowRecycleBin(true)}
@@ -406,7 +505,7 @@ export function MediaLibrary({ onSelect }) {
           >
             <Folder className="w-4 h-4 text-gray-700 group-data-[state=active]:text-gray-500" />
             <span className="hidden sm:inline">All</span>
-            <span className="bg-gray-100 text-gray-700 group-data-[state=active]:bg-gray-200 text-xs px-2 py-0.5 rounded-full transition-colors">
+            <span className={`bg-gray-100 text-gray-700 group-data-[state=active]:bg-gray-200 text-xs px-2 py-0.5 rounded-full transition-colors ${showMetadata ? 'hidden' : ''}`}>
               {getTabCount('all')}
             </span>
           </TabsTrigger>
@@ -416,7 +515,7 @@ export function MediaLibrary({ onSelect }) {
           >
             <FileCog className="w-4 h-4 text-gray-700 group-data-[state=active]:text-purple-500" />
             <span className="hidden sm:inline">Project files</span>
-            <span className="bg-purple-100 text-purple-700 group-data-[state=active]:bg-purple-200 text-xs px-2 py-0.5 rounded-full transition-colors">
+            <span className={`bg-purple-100 text-purple-700 group-data-[state=active]:bg-purple-200 text-xs px-2 py-0.5 rounded-full transition-colors ${showMetadata ? 'hidden' : ''}`}>
               {getTabCount(MEDIA_TYPES.PROJECT_FILES)}
             </span>
           </TabsTrigger>
@@ -426,7 +525,7 @@ export function MediaLibrary({ onSelect }) {
           >
             <FileVideo className="w-4 h-4 text-gray-700 group-data-[state=active]:text-pink-500" />
             <span className="hidden sm:inline">Video</span>
-            <span className="bg-pink-100 text-pink-700 group-data-[state=active]:bg-pink-200 text-xs px-2 py-0.5 rounded-full transition-colors">
+            <span className={`bg-pink-100 text-pink-700 group-data-[state=active]:bg-pink-200 text-xs px-2 py-0.5 rounded-full transition-colors ${showMetadata ? 'hidden' : ''}`}>
               {getTabCount(MEDIA_TYPES.VIDEO)}
             </span>
           </TabsTrigger>
@@ -436,7 +535,7 @@ export function MediaLibrary({ onSelect }) {
           >
             <Music className="w-4 h-4 text-gray-700 group-data-[state=active]:text-green-700" />
             <span className="hidden sm:inline">Audio</span>
-            <span className="bg-green-100 text-green-700 group-data-[state=active]:bg-green-200 text-xs px-2 py-0.5 rounded-full transition-colors">
+            <span className={`bg-green-100 text-green-700 group-data-[state=active]:bg-green-200 text-xs px-2 py-0.5 rounded-full transition-colors ${showMetadata ? 'hidden' : ''}`}>
               {getTabCount(MEDIA_TYPES.AUDIO)}
             </span>
           </TabsTrigger>
@@ -446,7 +545,7 @@ export function MediaLibrary({ onSelect }) {
           >
             <FileImage className="w-4 h-4 text-gray-700 group-data-[state=active]:text-blue-500" />
             <span className="hidden sm:inline">Images</span>
-            <span className="bg-blue-100 text-blue-700 group-data-[state=active]:bg-blue-200 text-xs px-2 py-0.5 rounded-full transition-colors">
+            <span className={`bg-blue-100 text-blue-700 group-data-[state=active]:bg-blue-200 text-xs px-2 py-0.5 rounded-full transition-colors ${showMetadata ? 'hidden' : ''}`}>
               {getTabCount(MEDIA_TYPES.IMAGE)}
             </span>
           </TabsTrigger>
@@ -456,7 +555,7 @@ export function MediaLibrary({ onSelect }) {
           >
             <FileText className="w-4 h-4 text-gray-700 group-data-[state=active]:text-amber-500" />
             <span className="hidden sm:inline">Documents</span>
-            <span className="bg-amber-100 text-amber-700 group-data-[state=active]:bg-amber-200 text-xs px-2 py-0.5 rounded-full transition-colors">
+            <span className={`bg-amber-100 text-amber-700 group-data-[state=active]:bg-amber-200 text-xs px-2 py-0.5 rounded-full transition-colors ${showMetadata ? 'hidden' : ''}`}>
               {getTabCount(MEDIA_TYPES.DOCUMENT)}
             </span>
           </TabsTrigger>
@@ -500,11 +599,32 @@ export function MediaLibrary({ onSelect }) {
                 <Card
                   key={item.id}
                   className="group relative cursor-pointer hover:shadow-xl transition-all duration-300 bg-white border border-gray-200 shadow-sm overflow-hidden rounded-xl h-56 py-0"
-                  onClick={() => onSelect?.(item)}
+                  onClick={() => {
+                    if (isSelectionMode) {
+                      handleSelectItem(item, { stopPropagation: () => {} });
+                    } else if (showMetadata) {
+                      setSelectedFileMetadata(item);
+                    } else {
+                      onSelect?.(item);
+                    }
+                  }}
                   onContextMenu={(e) => handleRightClick(e, item)}
                 >
-                  {/* Clean Hover Overlay */}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex items-center justify-center">
+                  {/* Selection Checkbox */}
+                  {isSelectionMode && (
+                    <div className="absolute top-2 left-2 z-20">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.some(selected => selected.id === item.id)}
+                        onChange={(e) => handleSelectItem(item, e)}
+                        className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  )}
+
+                  {/* Light Hover Overlay */}
+                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex items-center justify-center">
                     <div className="flex items-center gap-3">
                       <Button
                         variant="ghost"
@@ -518,7 +638,7 @@ export function MediaLibrary({ onSelect }) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-10 w-10 p-0 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all duration-200"
+                        className="h-10 w-10 p-0 bg-white/90 hover:bg-white text-gray-700 hover:text-red-500 rounded-lg transition-all duration-200"
                         onClick={(e) => handleDelete(item, e)}
                         title="Delete"
                       >
@@ -656,107 +776,137 @@ export function MediaLibrary({ onSelect }) {
                 {filteredMedia.map((item) => (
                   <Card
                     key={item.id}
-                    className="group relative cursor-pointer hover:shadow-2xl transition-all duration-500 bg-white border border-gray-200/50 shadow-lg overflow-hidden rounded-2xl h-fit"
-                    onClick={() => onSelect?.(item)}
+                    className="group relative cursor-pointer hover:shadow-xl transition-all duration-300 bg-white border border-gray-200 shadow-sm overflow-hidden rounded-xl h-64"
+                    onClick={() => {
+                      if (isSelectionMode) {
+                        handleSelectItem(item, { stopPropagation: () => {} });
+                      } else if (showMetadata) {
+                        setSelectedFileMetadata(item);
+                      } else {
+                        onSelect?.(item);
+                      }
+                    }}
                     onContextMenu={(e) => handleRightClick(e, item)}
                   >
-                    {/* Professional Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/60 to-black/90 opacity-0 group-hover:opacity-100 transition-all duration-500 z-10 flex flex-col justify-end p-6">
-                      <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                        <div className="text-white text-sm font-semibold mb-3 tracking-wide">
-                          {type.replace('_', ' ').toUpperCase()}
-                        </div>
-                        <div className="flex items-center justify-center gap-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-11 w-11 p-0 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl backdrop-blur-md transition-all duration-300 hover:scale-110"
-                            onClick={(e) => handleDownload(item, e)}
-                            title="Download"
-                          >
-                            <Download className="w-5 h-5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-11 w-11 p-0 bg-red-500/80 hover:bg-red-500 text-white border border-red-400/30 rounded-xl backdrop-blur-md transition-all duration-300 hover:scale-110"
-                            onClick={(e) => handleDelete(item, e)}
-                            title="Delete"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </Button>
-                        </div>
+                    {/* Selection Checkbox */}
+                    {isSelectionMode && (
+                      <div className="absolute top-2 left-2 z-20">
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.some(selected => selected.id === item.id)}
+                          onChange={(e) => handleSelectItem(item, e)}
+                          className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    )}
+
+                    {/* Light Hover Overlay */}
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex items-center justify-center">
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-10 w-10 p-0 bg-white/90 hover:bg-white text-gray-700 rounded-lg transition-all duration-200"
+                          onClick={(e) => handleDownload(item, e)}
+                          title="Download"
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-10 w-10 p-0 bg-white/90 hover:bg-white text-gray-700 hover:text-red-500 rounded-lg transition-all duration-200"
+                          onClick={(e) => handleDelete(item, e)}
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
 
-                    <div className="p-5">
-                      {/* Header with Icon and Basic Info */}
-                      <div className="flex items-start gap-3 mb-4">
-                        <div className="p-3 bg-gradient-to-br from-gray-100 to-gray-200 border border-gray-300 rounded-xl shadow-sm">
-                          {item.type === MEDIA_TYPES.PROJECT_FILES ? (
-                            <img src="/pp.png" className="w-6 h-6" alt="Project file" />
-                          ) : (
-                            getFileIcon(item)
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-sm text-gray-900 leading-snug mb-2 line-clamp-2" title={item.filename}>
-                            {item.filename}
-                          </h3>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
-                              {formatFileSize(item.size)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
+                    {/* Content Layout */}
+                    <div className="h-full flex flex-col">
                       {/* Preview Section */}
-                      {item.type === MEDIA_TYPES.VIDEO && (
-                        <div className="mb-4 aspect-video bg-gray-100 rounded-xl overflow-hidden border border-gray-200 shadow-inner">
-                          <video
-                            src={item.url}
+                      <div className="h-32 bg-gray-100 overflow-hidden relative">
+                        {item.type === MEDIA_TYPES.VIDEO && (
+                          <video 
+                            src={item.url} 
                             className="w-full h-full object-cover"
                             preload="metadata"
                           />
-                        </div>
-                      )}
+                        )}
+                        
+                        {item.type === MEDIA_TYPES.AUDIO && (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-100 to-purple-200">
+                            <div className="text-center">
+                              <Music className="w-6 h-6 text-purple-600 mx-auto mb-1" />
+                              <span className="text-xs text-purple-700 font-medium">Audio</span>
+                            </div>
+                          </div>
+                        )}
 
-                      {item.type === MEDIA_TYPES.AUDIO && (
-                        <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200">
-                          <audio controls className="w-full h-6">
-                            <source src={item.url} />
-                          </audio>
-                        </div>
-                      )}
-
-                      {(item.type === MEDIA_TYPES.IMAGE || isImageFile(item)) && (
-                        <div className="mb-4 aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden border border-gray-200 shadow-inner">
-                          <img
-                            src={item.url}
+                        {(item.type === MEDIA_TYPES.IMAGE || isImageFile(item)) && (
+                          <img 
+                            src={item.url} 
                             alt={item.filename}
                             className="w-full h-full object-cover"
                             loading="lazy"
                           />
-                        </div>
-                      )}
+                        )}
 
-                      {/* Footer Information */}
-                      <div className="space-y-3 pt-3 border-t border-gray-100">
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <User className="w-3.5 h-3.5" />
-                            <span className="font-medium">{item.uploadedBy}</span>
+                        {item.type === MEDIA_TYPES.DOCUMENT && (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200">
+                            <div className="text-center">
+                              <FileText className="w-6 h-6 text-blue-600 mx-auto mb-1" />
+                              <span className="text-xs text-blue-700 font-medium">Document</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1.5 text-gray-500">
-                            <Calendar className="w-3.5 h-3.5" />
-                            <span>{formatDate(item.uploadedAt || item.createdAt)}</span>
+                        )}
+
+                        {item.type === MEDIA_TYPES.PROJECT_FILES && (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-100 to-amber-200">
+                            <div className="text-center">
+                              <img src="/pp.png" className="w-6 h-6 mx-auto mb-1" alt="Project file" />
+                              <span className="text-xs text-amber-700 font-medium">Project</span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-center">
-                          <span className="inline-block px-3 py-1.5 bg-gradient-to-r from-gray-900 to-gray-700 text-white text-xs font-semibold rounded-full shadow-sm">
-                            {(type || 'file').split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                        )}
+
+                        {/* Default fallback */}
+                        {!['video', 'audio', 'image', 'document', 'project_files'].includes(item.type) && (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                            <div className="text-center">
+                              <File className="w-6 h-6 text-gray-600 mx-auto mb-1" />
+                              <span className="text-xs text-gray-700 font-medium">File</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content Info */}
+                      <div className="flex-1 p-3 flex flex-col justify-between">
+                        {/* Title and Size */}
+                        <div className="mb-2">
+                          <h3 className="font-semibold text-sm text-gray-900 leading-tight mb-1 line-clamp-2" title={item.filename}>
+                            {item.filename}
+                          </h3>
+                          <span className="inline-block text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
+                            {formatFileSize(item.size)}
                           </span>
+                        </div>
+
+                        {/* Footer with Flex Wrap */}
+                        <div className="space-y-1.5">
+                          <div className="flex flex-wrap items-center justify-between gap-1 text-xs text-gray-500">
+                            <span className="truncate min-w-0 flex-shrink">{item.uploadedBy}</span>
+                            <span className="flex-shrink-0">{formatDate(item.uploadedAt || item.createdAt)}</span>
+                          </div>
+                          <div className="text-center">
+                            <span className="inline-block px-2 py-0.5 bg-gray-900 text-white text-xs font-medium rounded">
+                              {(item.type || 'file').split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -775,8 +925,7 @@ export function MediaLibrary({ onSelect }) {
         <div className="fixed right-0 top-16 h-[calc(100vh-4rem)] w-72 bg-white border-l border-gray-200 shadow-xl z-50 transform transition-transform duration-300 ease-in-out overflow-hidden">
           <div className="h-full flex flex-col">
             <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-200 flex justify-between items-center flex-shrink-0">
-              <h3 className="font-semibold text-lg flex items-center gap-2 text-gray-800">
-                <Eye className="w-5 h-5 text-indigo-600" />
+              <h3 className="font-semibold text-lg text-gray-800">
                 File Details
               </h3>
               <Button

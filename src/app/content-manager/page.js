@@ -34,6 +34,8 @@ export default function ContentManagerPage() {
   const [draggedItem, setDraggedItem] = useState(null);
   const [animatingCard, setAnimatingCard] = useState(null);
   const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0, item: null });
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const router = useRouter();
   const { user } = useAuthStore();
 
@@ -295,6 +297,65 @@ export default function ContentManagerPage() {
     }
   }
 
+  const handleSelectItem = (item, e) => {
+    e.stopPropagation();
+    setSelectedItems(prev => {
+      const isSelected = prev.some(selected => selected.id === item.id);
+      if (isSelected) {
+        return prev.filter(selected => selected.id !== item.id);
+      } else {
+        return [...prev, item];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    // Get all available content across all channels
+    const allContent = [
+      ...availableContent,
+      ...Object.values(channelContent).flat()
+    ];
+    
+    if (selectedItems.length === allContent.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems([...allContent]);
+    }
+  };
+
+  const handleMoveSelectedToPosted = async () => {
+    if (selectedItems.length === 0) return;
+    
+    setIsSubmitting(true);
+    try {
+      for (const item of selectedItems) {
+        const originalChannel = item.assignedChannel;
+        
+        await updateDoc(doc(db, 'tasks', item.id), {
+          videoUrl: '', // Empty URL for bulk posting
+          videoPosted: true,
+          postedAt: new Date(),
+          originalChannel: originalChannel
+        });
+      }
+
+      toast.success(`${selectedItems.length} items moved to posted`);
+      setSelectedItems([]);
+      setIsSelectionMode(false);
+      fetchContent();
+    } catch (error) {
+      console.error('Error moving items to posted:', error);
+      toast.error('Failed to move some items to posted');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const exitSelectionMode = () => {
+    setIsSelectionMode(false);
+    setSelectedItems([]);
+  };
+
   // Format date helper
   function formatDate(timestamp) {
     if (!timestamp) return 'No date';
@@ -303,17 +364,38 @@ export default function ContentManagerPage() {
   }
 
   // Render content card component
-  function ContentCard({ item, isDraggable = true, channelBorderColor = 'border-l-gray-300' }) {
+  function ContentCard({ item, isDraggable = true, channelBorderColor = 'border-l-gray-300', dotColor = 'bg-gray-400' }) {
+    const isSelected = selectedItems.some(selected => selected.id === item.id);
+    
     return (
       <Card
         key={item.id}
-        className={`mb-2 cursor-grab hover:shadow-md transition-all duration-200 bg-white border-0 shadow-sm border-l-4 ${channelBorderColor} relative`}
-        draggable={isDraggable}
-        onDragStart={(e) => handleDragStart(e, item)}
-        onClick={() => openDetailDialog(item)}
+        className={`mb-2 cursor-grab hover:shadow-md transition-all duration-200 bg-white border-0 shadow-sm relative ${isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`}
+        draggable={isDraggable && !isSelectionMode}
+        onDragStart={(e) => !isSelectionMode && handleDragStart(e, item)}
+        onClick={() => {
+          if (isSelectionMode) {
+            handleSelectItem(item, { stopPropagation: () => {} });
+          } else {
+            openDetailDialog(item);
+          }
+        }}
       >
-        {isDraggable && (
-          <div className="absolute top-2 right-2 w-2 h-2 bg-gray-400 rounded-full"></div>
+        {/* Selection Checkbox */}
+        {isSelectionMode && (
+          <div className="absolute top-2 left-2 z-10">
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={(e) => handleSelectItem(item, e)}
+              className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
+
+        {isDraggable && !isSelectionMode && (
+          <div className={`absolute top-2 right-2 w-2 h-2 ${dotColor} rounded-full`}></div>
         )}
         
         <CardHeader className="pb-1 pt-3">
@@ -343,6 +425,41 @@ export default function ContentManagerPage() {
           <p className="text-gray-600 mt-1">Manage content across all channels</p>
         </div>
         <div className="flex gap-3">
+          {isSelectionMode && (
+            <>
+              <Button
+                variant="outline"
+                onClick={handleSelectAll}
+                className="hover:bg-blue-50 hover:text-blue-600"
+              >
+                {selectedItems.length === [...availableContent, ...Object.values(channelContent).flat()].length ? 'Deselect All' : 'Select All'}
+              </Button>
+              <Button
+                variant="default"
+                onClick={handleMoveSelectedToPosted}
+                disabled={selectedItems.length === 0 || isSubmitting}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isSubmitting ? 'Moving...' : `Move to Posted (${selectedItems.length})`}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={exitSelectionMode}
+                className="hover:bg-gray-100"
+              >
+                Cancel
+              </Button>
+            </>
+          )}
+          {!isSelectionMode && (
+            <Button
+              variant="outline"
+              onClick={() => setIsSelectionMode(true)}
+              className="hover:bg-blue-50 hover:text-blue-600"
+            >
+              Select Items
+            </Button>
+          )}
           <Button
             variant="default"
             onClick={openPostedDialog}
@@ -380,7 +497,7 @@ export default function ContentManagerPage() {
                 <ContentCard 
                   key={item.id} 
                   item={item} 
-                  channelBorderColor="border-l-gray-400"
+                  dotColor="bg-gray-400"
                 />
               ))
             )}
@@ -410,7 +527,11 @@ export default function ContentManagerPage() {
                   <ContentCard 
                     key={item.id} 
                     item={item} 
-                    channelBorderColor={channel.borderColor}
+                    dotColor={channel.color.includes('purple') ? 'bg-purple-400' : 
+                             channel.color.includes('blue') ? 'bg-blue-400' :
+                             channel.color.includes('green') ? 'bg-green-400' :
+                             channel.color.includes('red') ? 'bg-red-400' :
+                             channel.color.includes('amber') ? 'bg-amber-400' : 'bg-gray-400'}
                   />
                 ))
               )}

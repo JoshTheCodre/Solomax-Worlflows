@@ -70,14 +70,21 @@ const useMediaStore = create((set, get) => ({
       [MEDIA_TYPES.VIDEO]: 'video'
     }[fileType] || 'documents';
     
-    return `media/${folder}/${Date.now()}-${filename}`;
+    // Create a unique filename to prevent conflicts
+    const timestamp = Date.now();
+    const randomId = Math.random().toString(36).substr(2, 9);
+    const fileExtension = filename.split('.').pop();
+    const fileNameWithoutExt = filename.replace(`.${fileExtension}`, '');
+    const uniqueFilename = `${fileNameWithoutExt}-${timestamp}-${randomId}.${fileExtension}`;
+    
+    return `media/${folder}/${uniqueFilename}`;
   },
 
   // Create upload record
   createUpload: (file, user) => {
     const fileType = get().getFileType(file);
     const upload = {
-      id: Date.now() + Math.random(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${file.name}`,
       filename: file.name,
       originalName: file.name,
       size: file.size,
@@ -200,8 +207,33 @@ const useMediaStore = create((set, get) => ({
   uploadFiles: async (files, user) => {
     const fileArray = Array.from(files);
     const uploads = [];
+    const existingMedia = get().media || [];
+    const existingUploads = get().uploads || [];
 
-    for (const file of fileArray) {
+    // Filter out files that are already uploaded or currently uploading
+    const newFiles = fileArray.filter(file => {
+      const isDuplicate = existingMedia.some(media => 
+        media.filename === file.name && 
+        media.size === file.size
+      ) || existingUploads.some(upload => 
+        upload.filename === file.name && 
+        upload.size === file.size &&
+        (upload.status === 'uploading' || upload.status === 'completed')
+      );
+      
+      if (isDuplicate) {
+        console.log(`Skipping duplicate file: ${file.name}`);
+      }
+      
+      return !isDuplicate;
+    });
+
+    if (newFiles.length === 0) {
+      console.log('No new files to upload');
+      return [];
+    }
+
+    for (const file of newFiles) {
       const upload = await get().uploadFile(file, user);
       uploads.push(upload);
     }
