@@ -22,6 +22,7 @@ import { Card } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { collection, query, getDocs, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import useMediaStore from '@/store/mediaStore';
@@ -240,7 +241,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
         </DialogHeader>
 
         {/* Scrollable Content */}
-        <div className="max-h-[calc(95vh-140px)] overflow-y-auto">
+        <ScrollArea className="max-h-[calc(90vh-140px)]">
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             
             {/* Task Type Selection */}
@@ -443,7 +444,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
 
             {/* Subtasks Section - Only show if task group is enabled */}
             {formData.isTaskGroup && (
-              <Card className="p-6 border border-indigo-200 shadow-sm bg-indigo-50/30">
+              <Card className="p-0 border border-indigo-200 shadow-sm bg-indigo-50/30">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <Layers className="w-5 h-5 text-indigo-600" />
@@ -463,9 +464,9 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
                   </Button>
                 </div>
                 
-                <div className="space-y-4 max-h-80 overflow-y-auto">
+                <div className="space-y-2 max-h-80 overflow-y-auto">
                   {subtasks.map((subtask, index) => (
-                    <Card key={index} className="p-4 bg-white border border-gray-200 shadow-sm">
+                    <Card key={index} className="p-1 bg-white border border-gray-200 shadow-sm">
                       <div className="flex items-start gap-4">
                         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div className="md:col-span-1">
@@ -509,7 +510,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
                               onValueChange={(value) => updateSubtask(index, 'priority', value)}
                             >
                               <SelectTrigger className="h-9 text-sm border-gray-300 focus:border-indigo-500">
-                                <SelectValue placeholder={`Default (${formData.priority || 'Medium'})`} />
+                                <SelectValue placeholder={`(${formData.priority || 'Medium'})`} />
                               </SelectTrigger>
                               <SelectContent>
                                 {Object.values(TASK_PRIORITY).map((priority) => (
@@ -595,7 +596,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
               </div>
             </Card>
           </form>
-        </div>
+        </ScrollArea>
 
         {/* Footer */}
         <div className="flex justify-end items-center gap-3 px-6 py-4 bg-gray-50 border-t border-gray-200">
