@@ -173,25 +173,6 @@ export default function TasksPage() {
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-semibold text-gray-900">Tasks</h1>
-            <DragDropTaskButton onSubmit={async (taskData) => {
-              try {
-                await useTaskStore.getState().addTask({
-                  ...taskData,
-                  createdBy: user.email,
-                  activity: [
-                    {
-                      user: user.displayName || user.email,
-                      action: 'created the task',
-                      timestamp: new Date()
-                    }
-                  ]
-                });
-              } catch (error) {
-                console.error('Error creating task:', error);
-              }
-            }}>
-              New Task
-            </DragDropTaskButton>
           </div>
           
           <Tabs defaultValue="all" className="w-full">

@@ -76,7 +76,7 @@ export default function Home() {
     switch (activeTab) {
       case 'active':
         return filteredTasks.filter(task => 
-          task.status === TASK_STATUS.ACTIVE || task.status === TASK_STATUS.IN_PROGRESS
+          task.status === TASK_STATUS.ACTIVE || task.status === TASK_STATUS.IN_PROGRESS || task.status === 'redo'
         );
       case 'completed':
         return filteredTasks.filter(task => task.status === TASK_STATUS.COMPLETED);
@@ -87,7 +87,7 @@ export default function Home() {
         });
       case 'reviews':
         return filteredTasks.filter(task => 
-          task.status === TASK_STATUS.PENDING_APPROVAL || task.status === TASK_STATUS.REJECTED
+          task.status === TASK_STATUS.PENDING_APPROVAL
         );
       default:
         return filteredTasks;
@@ -101,7 +101,7 @@ export default function Home() {
     const now = new Date();
     
     const activeTasks = tasks.filter(task => 
-      task.status === TASK_STATUS.ACTIVE || task.status === TASK_STATUS.IN_PROGRESS
+      task.status === TASK_STATUS.ACTIVE || task.status === TASK_STATUS.IN_PROGRESS || task.status === 'redo'
     );
     
     const completedTasks = tasks.filter(task => task.status === TASK_STATUS.COMPLETED);
@@ -112,7 +112,7 @@ export default function Home() {
     });
     
     const reviewTasks = tasks.filter(task => 
-      task.status === TASK_STATUS.PENDING_APPROVAL || task.status === TASK_STATUS.REJECTED
+      task.status === TASK_STATUS.PENDING_APPROVAL
     );
     
     return {
@@ -132,7 +132,7 @@ export default function Home() {
             <TabsTrigger value="active">
               Active
               {getTaskCounts().active > 0 && (
-                <Badge className="ml-2 bg-blue-500 text-white hover:bg-blue-500">
+                <Badge className="ml-2 bg-blue-100 text-blue-700 hover:bg-blue-100">
                   {getTaskCounts().active}
                 </Badge>
               )}
@@ -140,7 +140,7 @@ export default function Home() {
             <TabsTrigger value="completed">
               Completed
               {getTaskCounts().completed > 0 && (
-                <Badge className="ml-2 bg-green-500 text-white hover:bg-green-500">
+                <Badge className="ml-2 bg-green-100 text-green-700 hover:bg-green-100">
                   {getTaskCounts().completed}
                 </Badge>
               )}
@@ -148,7 +148,7 @@ export default function Home() {
             <TabsTrigger value="due">
               Due
               {getTaskCounts().due > 0 && (
-                <Badge className="ml-2 bg-red-500 text-white hover:bg-red-500">
+                <Badge className="ml-2 bg-red-100 text-red-700 hover:bg-red-100">
                   {getTaskCounts().due}
                 </Badge>
               )}
@@ -156,7 +156,7 @@ export default function Home() {
             <TabsTrigger value="reviews">
               Reviews
               {getTaskCounts().reviews > 0 && (
-                <Badge className="ml-2 bg-purple-500 text-white hover:bg-purple-500">
+                <Badge className="ml-2 bg-purple-100 text-purple-700 hover:bg-purple-100">
                   {getTaskCounts().reviews}
                 </Badge>
               )}

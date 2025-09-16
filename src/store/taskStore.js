@@ -315,12 +315,12 @@ const useTaskStore = create((set, get) => ({
       set({ error: null });
       
       const updatePayload = {
-        status: isApproved ? 'completed' : 'rejected',
+        status: isApproved ? 'completed' : 'redo',
         reviewCompletedAt: new Date(),
         reviewedBy: reviewData.reviewedBy || null,
         reviewFeedback: reviewData.feedback || '',
         videoPosted: false, // Initialize as false when task is completed
-        completedAt: new Date(), // Add completedAt timestamp
+        completedAt: isApproved ? new Date() : null, // Only set completedAt if approved
         ...reviewData
       };
       
@@ -383,9 +383,9 @@ const useTaskStore = create((set, get) => ({
         
         // Special handling for 'active' status
         if (targetStatus === 'active') {
-          // For 'active' filter, include tasks that are active, in_progress, or have no explicit status
+          // For 'active' filter, include tasks that are active, in_progress, redo, or have no explicit status
           // (treating empty/null status as active)
-          const isActiveOrInProgress = taskStatus === 'active' || taskStatus === 'in_progress' || taskStatus === '' || !task.status;
+          const isActiveOrInProgress = taskStatus === 'active' || taskStatus === 'in_progress' || taskStatus === 'redo' || taskStatus === '' || !task.status;
           
           if (!isActiveOrInProgress) {
             console.log(`Task ${task.id} (${task.title}) has status "${taskStatus}" - excluding from active filter`);

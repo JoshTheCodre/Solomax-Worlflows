@@ -28,20 +28,20 @@ import {
 
 const navigation = [
   { name: 'Home', href: '/home', icon: HomeIcon },
-  { name: 'Tasks', href: '/tasks', icon: CheckSquareIcon },
+  // { name: 'Tasks', href: '/tasks', icon: CheckSquareIcon },
   { name: 'Media', href: '/media', icon: FilmIcon },
-  { name: 'Team', href: '/team', icon: UsersIcon },
+  // { name: 'Team', href: '/team', icon: UsersIcon },
   { name: 'Content Mgr', href: '/content-manager', icon: FolderOpenIcon },
-  { name: 'Content Calendar', href: '/content-calendar', icon: Calendar },
+  // { name: 'Content Calendar', href: '/content-calendar', icon: Calendar },
 ];
 
 const adminNavigation = [
   { name: 'Overview', href: '/admin/dashboard', icon: LayoutDashboardIcon },
-  { name: 'Tasks', href: '/admin/tasks', icon: CheckSquareIcon },
+  // { name: 'Tasks', href: '/admin/tasks', icon: CheckSquareIcon },
   { name: 'Media', href: '/media', icon: FilmIcon },
-  { name: 'Team', href: '/team', icon: UsersIcon },
+  // { name: 'Team', href: '/team', icon: UsersIcon },
   { name: 'Content Mgr', href: '/admin/content-manager', icon: FolderOpenIcon },
-  { name: 'Content Calendar', href: '/content-calendar', icon: Calendar },
+  // { name: 'Content Calendar', href: '/content-calendar', icon: Calendar },
 ];
 
 export function Sidebar({ className }) {
@@ -76,14 +76,14 @@ export function Sidebar({ className }) {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "group flex items-center rounded-md px-3 py-2.5 text-sm font-medium transition-all hover:bg-blue-50/80",
+                  "group flex items-center rounded-md px-4 py-3 text-base font-medium transition-all hover:bg-blue-50/80",
                   pathname === item.href 
                     ? "bg-blue-50 text-black font-semibold" 
                     : "text-gray-700 hover:text-gray-900"
                 )}
               >
                 <item.icon className={cn(
-                  "mr-3 h-4 w-4 flex-shrink-0",
+                  "mr-4 h-5 w-5 flex-shrink-0",
                   iconColors[index] || "text-gray-500"
                 )} />
                 <span className="truncate">{item.name}</span>

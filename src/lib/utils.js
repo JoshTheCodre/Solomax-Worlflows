@@ -59,20 +59,22 @@ export const getStatusColor = (status) => {
   switch (normalizedStatus) {
     case TASK_STATUS.ACTIVE:
     case 'active': // Handle string literal case
-      return 'bg-yellow-500/10 text-yellow-500';
+      return 'bg-yellow-100 text-yellow-700';
     case TASK_STATUS.IN_PROGRESS:
-      return 'bg-blue-500/10 text-blue-500';
+      return 'bg-blue-100 text-blue-700';
     case TASK_STATUS.PENDING_APPROVAL:
-      return 'bg-purple-500/10 text-purple-500';
+      return 'bg-purple-100 text-purple-700';
     case TASK_STATUS.COMPLETED:
-      return 'bg-green-500/10 text-green-500';
+      return 'bg-green-100 text-green-700';
     case TASK_STATUS.REJECTED:
-      return 'bg-red-500/10 text-red-500';
+      return 'bg-red-100 text-red-700';
+    case 'redo':
+      return 'bg-orange-100 text-orange-700';
     case 'due':
-      return 'bg-orange-500/10 text-orange-500';
+      return 'bg-red-100 text-red-700';
     default:
       // Default to active styling for any unknown status
-      return 'bg-yellow-500/10 text-yellow-500';
+      return 'bg-yellow-100 text-yellow-700';
   }
 };
 
@@ -109,6 +111,8 @@ export const getFormattedStatus = (status, isDue = false) => {
       return 'Completed';
     case TASK_STATUS.REJECTED:
       return 'Rejected';
+    case 'redo':
+      return 'Redo';
     case 'due':
       return 'Due';
     default:

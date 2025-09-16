@@ -89,9 +89,37 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
 
     // Normalize status for display - handle null/undefined as 'active'
     const normalizedStatus = task.status || 'active';
-    const displayStatus = isDue ? 'due' : normalizedStatus;
     
-    const statusColor = getStatusColor(displayStatus);
+    // Determine which badges to show - prioritize "due" over other statuses
+    const badges = [];
+    
+    if (isDue) {
+      // If task is due, always show the due badge first
+      badges.push({
+        status: 'due',
+        color: 'bg-red-100 text-red-700',
+        icon: <Clock className="w-3 h-3" />,
+        text: 'Due'
+      });
+      
+      // Only show the original status if it's not 'active' to avoid redundancy
+      if (normalizedStatus !== 'active' && normalizedStatus !== 'due') {
+        badges.push({
+          status: normalizedStatus,
+          color: getStatusColor(normalizedStatus),
+          icon: normalizedStatus === TASK_STATUS.COMPLETED ? <CheckCircle2 className="w-3 h-3" /> : <CircleDot className="w-3 h-3" />,
+          text: getFormattedStatus(normalizedStatus, false)
+        });
+      }
+    } else {
+      // If not due, just show the main status
+      badges.push({
+        status: normalizedStatus,
+        color: getStatusColor(normalizedStatus),
+        icon: normalizedStatus === TASK_STATUS.COMPLETED ? <CheckCircle2 className="w-3 h-3" /> : <CircleDot className="w-3 h-3" />,
+        text: getFormattedStatus(normalizedStatus, false)
+      });
+    }
     
     return (
       <div className="flex flex-col gap-3">
@@ -99,18 +127,16 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
         <div className="flex items-center">
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-semibold text-gray-900">{task.title}</span>
-            <Badge className={`${statusColor} text-xs px-2 py-0.5 ml-1.5 shadow-sm`}>
-              <div className="flex items-center gap-1">
-                {normalizedStatus === TASK_STATUS.COMPLETED ? (
-                  <CheckCircle2 className="w-3 h-3" />
-                ) : isDue ? (
-                  <Clock className="w-3 h-3" />
-                ) : (
-                  <CircleDot className="w-3 h-3" />
-                )}
-                <span>{getFormattedStatus(normalizedStatus, isDue)}</span>
-              </div>
-            </Badge>
+            <div className="flex items-center gap-1 ml-1.5">
+              {badges.map((badge, index) => (
+                <Badge key={`${badge.status}-${index}`} className={`${badge.color} text-xs px-2 py-0.5 shadow-sm`}>
+                  <div className="flex items-center gap-1">
+                    {badge.icon}
+                    <span>{badge.text}</span>
+                  </div>
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
 
