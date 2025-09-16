@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import {
@@ -27,7 +27,10 @@ import {
   FileCheck,
   Search,
   Clock,
-  X
+  X,
+  ChevronDown,
+  ChevronRight,
+  Folder
 } from 'lucide-react';
 
 import { TASK_STATUS, TASK_TYPES, TASK_PRIORITY, getStatusColor, getPriorityColor, getFormattedStatus } from '@/lib/utils';
@@ -39,6 +42,7 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
   const topScrollRef = useRef(null);
   const contentScrollRef = useRef(null);
   const itemsPerPage = 10;
@@ -46,20 +50,78 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
   // Ensure data is an array
   const safeData = Array.isArray(data) ? data : [];
   
+  // Group tasks by taskGroup field and separate single tasks
+  const { taskGroups, singleTasks } = safeData.reduce((acc, task) => {
+    if (task.taskGroup) {
+      if (!acc.taskGroups[task.taskGroup]) {
+        acc.taskGroups[task.taskGroup] = [];
+      }
+      acc.taskGroups[task.taskGroup].push(task);
+    } else {
+      acc.singleTasks.push(task);
+    }
+    return acc;
+  }, { taskGroups: {}, singleTasks: [] });
+
+  // Helper functions for task groups
+  const toggleGroupExpansion = (groupName) => {
+    const newExpanded = new Set(expandedGroups);
+    if (newExpanded.has(groupName)) {
+      newExpanded.delete(groupName);
+    } else {
+      newExpanded.add(groupName);
+    }
+    setExpandedGroups(newExpanded);
+  };
+
+  const calculateGroupProgress = (tasks) => {
+    const completedTasks = tasks.filter(task => task.status === TASK_STATUS.COMPLETED).length;
+    return { completed: completedTasks, total: tasks.length };
+  };
+
+  const getGroupStatus = (tasks) => {
+    const progress = calculateGroupProgress(tasks);
+    if (progress.completed === 0) return 'active';
+    if (progress.completed === progress.total) return 'completed';
+    return 'in_progress';
+  };
+
+  // Convert taskGroups object to array and combine with single tasks for display
+  const displayData = [
+    ...Object.entries(taskGroups).map(([groupName, tasks]) => ({
+      type: 'group',
+      groupName,
+      tasks: tasks.sort((a, b) => (a.createdAt?.toDate?.() || new Date(a.createdAt)) - (b.createdAt?.toDate?.() || new Date(b.createdAt))),
+      isExpanded: expandedGroups.has(groupName)
+    })),
+    ...singleTasks.map(task => ({ type: 'single', task }))
+  ].sort((a, b) => {
+    // Sort by most recent creation date
+    const dateA = a.type === 'group' 
+      ? Math.max(...a.tasks.map(t => (t.createdAt?.toDate?.() || new Date(t.createdAt)).getTime()))
+      : (a.task.createdAt?.toDate?.() || new Date(a.task.createdAt)).getTime();
+    const dateB = b.type === 'group'
+      ? Math.max(...b.tasks.map(t => (t.createdAt?.toDate?.() || new Date(t.createdAt)).getTime()))
+      : (b.task.createdAt?.toDate?.() || new Date(b.task.createdAt)).getTime();
+    return dateB - dateA;
+  });
+  
   // Debug data received by TaskTable
-  console.log(`TaskTable received ${safeData.length} tasks`);
-  if (safeData.length > 0) {
-    console.log('First 3 tasks status values:', safeData.slice(0, 3).map(t => ({ 
-      id: t.id, 
-      title: t.title,
-      status: t.status 
-    })));
+  console.log(`TaskTable received ${safeData.length} tasks, grouped into ${Object.keys(taskGroups).length} groups and ${singleTasks.length} single tasks`);
+  if (displayData.length > 0) {
+    console.log('First 3 items status values:', displayData.slice(0, 3).map(item => {
+      if (item.type === 'group') {
+        return { type: 'group', groupName: item.groupName, taskCount: item.tasks.length };
+      } else {
+        return { type: 'single', id: item.task.id, title: item.task.title, status: item.task.status };
+      }
+    }));
   }
 
-  // Calculate pagination
-  const totalPages = Math.ceil(safeData.length / itemsPerPage);
+  // Calculate pagination based on display data
+  const totalPages = Math.ceil(displayData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = safeData.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedData = displayData.slice(startIndex, startIndex + itemsPerPage);
 
   const renderTaskSummary = (task) => {
     if (!task || !task.deadline) {
@@ -317,69 +379,240 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
               </TableHeader>
               <TableBody>
                 {paginatedData.length > 0 ? (
-                  paginatedData.map((task, index) => (
-                    <motion.tr
-                      key={task.id}
-                      onClick={() => onRowClick(task)}
-                      className="cursor-pointer transition-all hover:bg-gray-50/80 group"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05, duration: 0.3 }}
-                      layout
-                    >
-                      {isAdmin && (
-                        <TableCell className="w-10 px-2">
-                          <div 
-                            className="flex items-center justify-center" 
-                            onClick={(e) => e.stopPropagation()}
+                  paginatedData.map((item, index) => {
+                    if (item.type === 'group') {
+                      const progress = calculateGroupProgress(item.tasks);
+                      const groupStatus = getGroupStatus(item.tasks);
+                      const isExpanded = item.isExpanded;
+                      
+                      return (
+                        <React.Fragment key={`group-${item.groupName}`}>
+                          {/* Group Header Row */}
+                          <motion.tr
+                            className="cursor-pointer transition-all hover:bg-blue-50/80 bg-blue-25/40 border-b-2 border-blue-100"
+                            onClick={() => toggleGroupExpansion(item.groupName)}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.05, duration: 0.3 }}
+                            layout
                           >
-                            <input
-                              type="checkbox"
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                              checked={selectedTasks.includes(task.id)}
-                              onChange={(e) => toggleTaskSelection(e, task.id)}
-                            />
-                          </div>
-                        </TableCell>
-                      )}
-                      <TableCell className="min-w-[400px] px-6 py-6">
-                        {renderTaskSummary(task)}
-                      </TableCell>
-                      <TableCell className="min-w-[120px] px-6 py-6">
-                        <Badge variant="secondary" className="text-xs">
-                          {task.type || 'N/A'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="min-w-[120px] px-6 py-6">
-                        <Badge className={`${getPriorityColor(task.priority)} text-xs`}>
-                          {task.priority || 'Medium'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="min-w-[150px] px-6 py-6">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
-                            <User className="w-3.5 h-3.5" />
-                          </div>
-                          <span className="text-sm text-gray-600">{task.assignee}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="min-w-[150px] px-6 py-6">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">
-                            {task.deadline ? format(task.deadline.toDate(), 'MMM dd, yyyy') : 'No deadline'}
-                          </span>
-                        </div>
-                      </TableCell>
-                      {isAdmin && (
-                        <TableCell className="min-w-[100px] text-right px-6 py-4">
-                          <div onClick={(e) => e.stopPropagation()}>
-                            {renderActions(task)}
-                          </div>
-                        </TableCell>
-                      )}
-                    </motion.tr>
-                  ))
+                            {isAdmin && (
+                              <TableCell className="w-10 px-2">
+                                <div className="flex items-center justify-center">
+                                  <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                                </div>
+                              </TableCell>
+                            )}
+                            <TableCell className="min-w-[400px] px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                  {isExpanded ? (
+                                    <ChevronDown className="w-5 h-5 text-blue-600" />
+                                  ) : (
+                                    <ChevronRight className="w-5 h-5 text-blue-600" />
+                                  )}
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
+                                      <Folder className="w-4 h-4 text-white" />
+                                    </div>
+                                    <div>
+                                      <h3 className="font-semibold text-gray-900">{item.groupName}</h3>
+                                      <p className="text-sm text-gray-500">
+                                        {progress.completed}/{progress.total} completed
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="ml-auto flex items-center gap-2">
+                                  <Badge className={`${getStatusColor(groupStatus)} text-xs px-2 py-1`}>
+                                    <div className="flex items-center gap-1">
+                                      {groupStatus === TASK_STATUS.COMPLETED ? (
+                                        <CheckCircle2 className="w-3 h-3" />
+                                      ) : (
+                                        <CircleDot className="w-3 h-3" />
+                                      )}
+                                      <span>{getFormattedStatus(groupStatus, false)}</span>
+                                    </div>
+                                  </Badge>
+                                  <div className="w-24 bg-gray-200 rounded-full h-2">
+                                    <div
+                                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                      style={{ width: `${(progress.completed / progress.total) * 100}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="min-w-[120px] px-6 py-4">
+                              <Badge variant="secondary" className="text-xs">
+                                Group ({item.tasks.length} tasks)
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="min-w-[120px] px-6 py-4">
+                              <Badge className="bg-blue-100 text-blue-700 text-xs">
+                                Mixed
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="min-w-[150px] px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                                  <User className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="text-sm text-gray-600">Multiple assignees</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="min-w-[150px] px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-gray-400" />
+                                <span className="text-sm text-gray-600">
+                                  {item.tasks.length} deadlines
+                                </span>
+                              </div>
+                            </TableCell>
+                            {isAdmin && (
+                              <TableCell className="min-w-[100px] text-right px-6 py-4">
+                                <div className="text-sm text-gray-500">Group actions</div>
+                              </TableCell>
+                            )}
+                          </motion.tr>
+                          
+                          {/* Expanded Group Tasks */}
+                          {isExpanded && item.tasks.map((task, taskIndex) => (
+                            <motion.tr
+                              key={task.id}
+                              onClick={() => onRowClick(task)}
+                              className="cursor-pointer transition-all hover:bg-gray-50/80 group bg-blue-50/20 border-l-4 border-blue-200"
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2 }}
+                              layout
+                            >
+                              {isAdmin && (
+                                <TableCell className="w-10 px-2">
+                                  <div 
+                                    className="flex items-center justify-center ml-4" 
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                      checked={selectedTasks.includes(task.id)}
+                                      onChange={(e) => toggleTaskSelection(e, task.id)}
+                                    />
+                                  </div>
+                                </TableCell>
+                              )}
+                              <TableCell className="min-w-[400px] px-6 py-4">
+                                <div className="ml-8 pl-4 border-l-2 border-blue-100">
+                                  {renderTaskSummary(task)}
+                                </div>
+                              </TableCell>
+                              <TableCell className="min-w-[120px] px-6 py-4">
+                                <Badge variant="secondary" className="text-xs">
+                                  {task.type || 'N/A'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="min-w-[120px] px-6 py-4">
+                                <Badge className={`${getPriorityColor(task.priority)} text-xs`}>
+                                  {task.priority || 'Medium'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="min-w-[150px] px-6 py-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                                    <User className="w-3.5 h-3.5" />
+                                  </div>
+                                  <span className="text-sm text-gray-600">{task.assignee}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="min-w-[150px] px-6 py-4">
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4 text-gray-400" />
+                                  <span className="text-sm text-gray-600">
+                                    {task.deadline ? format(task.deadline.toDate(), 'MMM dd, yyyy') : 'No deadline'}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              {isAdmin && (
+                                <TableCell className="min-w-[100px] text-right px-6 py-4">
+                                  <div onClick={(e) => e.stopPropagation()}>
+                                    {renderActions(task)}
+                                  </div>
+                                </TableCell>
+                              )}
+                            </motion.tr>
+                          ))}
+                        </React.Fragment>
+                      );
+                    } else {
+                      // Single task row
+                      const task = item.task;
+                      return (
+                        <motion.tr
+                          key={task.id}
+                          onClick={() => onRowClick(task)}
+                          className="cursor-pointer transition-all hover:bg-gray-50/80 group"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05, duration: 0.3 }}
+                          layout
+                        >
+                          {isAdmin && (
+                            <TableCell className="w-10 px-2">
+                              <div 
+                                className="flex items-center justify-center" 
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                  checked={selectedTasks.includes(task.id)}
+                                  onChange={(e) => toggleTaskSelection(e, task.id)}
+                                />
+                              </div>
+                            </TableCell>
+                          )}
+                          <TableCell className="min-w-[400px] px-6 py-6">
+                            {renderTaskSummary(task)}
+                          </TableCell>
+                          <TableCell className="min-w-[120px] px-6 py-6">
+                            <Badge variant="secondary" className="text-xs">
+                              {task.type || 'N/A'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="min-w-[120px] px-6 py-6">
+                            <Badge className={`${getPriorityColor(task.priority)} text-xs`}>
+                              {task.priority || 'Medium'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="min-w-[150px] px-6 py-6">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                                <User className="w-3.5 h-3.5" />
+                              </div>
+                              <span className="text-sm text-gray-600">{task.assignee}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="min-w-[150px] px-6 py-6">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm text-gray-600">
+                                {task.deadline ? format(task.deadline.toDate(), 'MMM dd, yyyy') : 'No deadline'}
+                              </span>
+                            </div>
+                          </TableCell>
+                          {isAdmin && (
+                            <TableCell className="min-w-[100px] text-right px-6 py-4">
+                              <div onClick={(e) => e.stopPropagation()}>
+                                {renderActions(task)}
+                              </div>
+                            </TableCell>
+                          )}
+                        </motion.tr>
+                      );
+                    }
+                  })
                 ) : (
                   <TableRow>
                     <TableCell
@@ -416,6 +649,9 @@ export function TaskTable({ data, onRowClick, onDeleteTask, onTransferTask, onUp
 
         {totalPages > 1 && (
           <div className={`flex items-center space-x-2 ${selectedTasks.length > 0 ? 'ml-auto' : 'ml-auto'}`}>
+            <span className="text-sm text-gray-500">
+              Page {currentPage} of {totalPages} • {displayData.length} items ({Object.keys(taskGroups).length} groups, {singleTasks.length} individual tasks)
+            </span>
             <Button
               variant="outline"
               size="sm"

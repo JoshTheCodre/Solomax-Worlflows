@@ -24,7 +24,7 @@ import { collection, query, getDocs, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import useMediaStore from '@/store/mediaStore';
 import { TASK_TYPES, TASK_PRIORITY } from '@/lib/utils';
-import { Calendar, Clock, UploadCloud, FileText, Briefcase, User2, CheckCircle2, File, FileImage, FileVideo, Music, Archive, X, Plus, Minus, Layers } from 'lucide-react';
+import { Calendar, Clock, UploadCloud, FileText, Briefcase, User2, CheckCircle2, File, FileImage, FileVideo, Music, Archive, X, Plus, Minus, Layers, Toggle } from 'lucide-react';
 
 export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, children, initialAttachments = [] }, ref) {
   const [open, setOpen] = useState(false);
@@ -39,7 +39,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
     priority: '',
     assignee: '',
     channel: '',
-    deadline: new Date().toISOString().slice(0, 10),
+    deadline: new Date().toISOString().slice(0, 10), // YYYY-MM-DD format for date input
     isTaskGroup: false,
     taskGroup: ''
   });
@@ -69,27 +69,35 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
     const fileType = file.type?.toLowerCase() || '';
     const fileName = file.original_filename?.toLowerCase() || '';
     
+    // Adobe files
     if (fileName.endsWith('.psd') || fileName.endsWith('.ai') || fileName.endsWith('.indd')) {
       return <div className="w-4 h-4 bg-purple-500 rounded text-white text-xs flex items-center justify-center font-bold">A</div>;
     }
+    // Audio files
     if (fileType.startsWith('audio/') || fileName.endsWith('.mp3') || fileName.endsWith('.wav')) {
       return <Music className="w-4 h-4 text-green-500" />;
     }
+    // Video files
     if (fileType.startsWith('video/') || fileName.endsWith('.mp4') || fileName.endsWith('.mov')) {
       return <FileVideo className="w-4 h-4 text-blue-500" />;
     }
+    // Image files
     if (fileType.startsWith('image/')) {
       return <FileImage className="w-4 h-4 text-purple-500" />;
     }
+    // PDF files
     if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
       return <div className="w-4 h-4 bg-red-500 rounded text-white text-xs flex items-center justify-center font-bold">P</div>;
     }
+    // Text files
     if (fileType.startsWith('text/') || fileName.endsWith('.txt')) {
       return <FileText className="w-4 h-4 text-gray-500" />;
     }
+    // Archive files
     if (fileName.endsWith('.zip') || fileName.endsWith('.rar')) {
       return <Archive className="w-4 h-4 text-yellow-500" />;
     }
+    // Default
     return <File className="w-4 h-4 text-gray-400" />;
   };
 
@@ -109,33 +117,6 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
   // Handle initial attachments when modal opens
   useEffect(() => {
     if (open && initialAttachments.length > 0) {
-      setAttachments(initialAttachments);
-    }
-  }, [open, initialAttachments]);
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const q = query(
-          collection(db, 'users'),
-          where('role', '==', 'user')
-        );
-        const querySnapshot = await getDocs(q);
-        const userData = querySnapshot.docs.map(doc => ({
-          email: doc.data().email,
-          displayName: doc.data().displayName || doc.data().email
-        }));
-        setUsers(userData);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
-    };
-
-    if (open) {
-      fetchUsers();
-    }
-  }, [open]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -194,38 +175,6 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
       console.error('Error creating task(s):', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children || (
-          <Button className="bg-gradient-to-r from-blue-900 to-blue-700 text-white gap-2 shadow-lg hover:shadow-blue-200 font-medium px-6 border border-blue-800 hover:from-blue-800 hover:to-blue-600 transition-all duration-300">
-            <CheckCircle2 className="w-4 h-4" />
-            Create Task
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="max-w-4xl bg-gradient-to-br from-slate-50 to-white border border-slate-200 shadow-2xl">
-        <DialogHeader className="border-b border-slate-200 pb-3">
-          <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <div className="p-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-md">
-              <CheckCircle2 className="w-5 h-5 text-white" />
-            </div>
-            Create New Task
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit}>
-          <Card className="bg-white/80">
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-0">
-                <div className="space-y-2">
-                  <label htmlFor="title" className="text-sm font-medium flex items-center gap-2 text-gray-700">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Task Title
-                  </label>
                   <Input
                     id="title"
                     value={formData.title}
@@ -272,6 +221,65 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
                   <label htmlFor="deadline" className="text-sm font-medium flex items-center gap-2 text-gray-700">
                     <Calendar className="w-4 h-4" />
                     {formData.isTaskGroup ? "Default Due Date" : "Due Date"}
+                  </label>
+        priority: '',
+        assignee: '',
+        channel: '',
+        deadline: new Date().toISOString().slice(0, 10), // YYYY-MM-DD format for date input
+      });
+      setAttachments([]);
+    } catch (error) {
+      console.error('Error creating task:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {children || (
+          <Button className="bg-gradient-to-r from-blue-900 to-blue-700 text-white gap-2 shadow-lg hover:shadow-blue-200 font-medium px-6 border border-blue-800 hover:from-blue-800 hover:to-blue-600 transition-all duration-300">
+            <CheckCircle2 className="w-4 h-4" />
+            Create Task
+          </Button>
+        )}
+      </DialogTrigger>
+      <DialogContent className="max-w-4xl bg-gradient-to-br from-slate-50 to-white border border-slate-200 shadow-2xl">
+        <DialogHeader className="border-b border-slate-200 pb-3">
+          <DialogTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <div className="p-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-md">
+              <CheckCircle2 className="w-5 h-5 text-white" />
+            </div>
+            Create New Task
+          </DialogTitle>
+        </DialogHeader>
+{/* new */}
+        <form onSubmit={handleSubmit}>
+          <Card className=" bg-white/80">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-0">
+                <div className="space-y-2">
+                  <label htmlFor="title" className="text-sm font-medium flex items-center gap-2 text-gray-700">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Task Title
+                  </label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    className="w-full transition-all duration-200 focus:ring-1 focus:ring-black border-gray-200 hover:border-gray-300"
+                    placeholder="Enter task title"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="deadline" className="text-sm font-medium flex items-center gap-2 text-gray-700">
+                    <Calendar className="w-4 h-4" />
+                    Due Date
                   </label>
                   <Input
                     id="deadline"
@@ -364,93 +372,6 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
                               </div>
                             </Avatar>
                             {user.displayName || user.email}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2 text-gray-700">
-                    <Archive className="w-4 h-4" />
-                    Channel
-                  </label>
-                  <Select
-                    value={formData.channel}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, channel: value })
-                    }
-                    required
-                  >
-                    <SelectTrigger className="w-full transition-all duration-200 focus:ring-1 focus:ring-black border-gray-200 hover:border-gray-300">
-                      <SelectValue placeholder="Select Channel" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="animation-fastfood">Animation Fastfood</SelectItem>
-                      <SelectItem value="epictoons">EpicToons</SelectItem>
-                      <SelectItem value="alpha-recap">Alpha Recap</SelectItem>
-                      <SelectItem value="super-recap">Super Recap</SelectItem>
-                      <SelectItem value="beta-recap">Beta Recap</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2 text-gray-700">
-                    <UploadCloud className="w-4 h-4" />
-                    Attachments
-                  </label>
-                  <div className="space-y-2">
-                    <Input
-                      type="file"
-                      multiple
-                      onChange={async (e) => {
-                        const files = Array.from(e.target.files || []);
-                        if (files.length === 0) return;
-
-                        const uploads = await uploadFiles(files, { name: 'Current User', uid: 'current-user' });
-                        
-                        const newAttachments = files.map((file) => ({
-                          original_filename: file.name,
-                          size: file.size,
-                          type: file.type
-                        }));
-                        
-                        setAttachments((prev) => [...prev, ...newAttachments]);
-                        e.target.value = '';
-                      }}
-                      accept="*/*"
-                      className="cursor-pointer"
-                    />
-                    {attachments.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-xs text-gray-500 font-medium mb-2">Attached Files:</p>
-                        <div className="grid grid-cols-3 gap-2">
-                          {attachments.map((file, index) => (
-                            <div key={index} className="relative flex flex-col items-center p-2 bg-gray-50 rounded-md group hover:bg-gray-100 transition-colors">
-                              {getFileIcon(file)}
-                              <span className="text-xs text-gray-700 text-center truncate w-full mt-1">{file.original_filename}</span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setAttachments((prev) => prev.filter((_, i) => i !== index))
-                                }
-                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all text-xs"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
               <div className="space-y-2">
                 <label htmlFor="description" className="text-sm font-medium flex items-center gap-2 text-gray-700">
                   <FileText className="w-4 h-4" />
@@ -479,20 +400,20 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
                     <Button
                       type="button"
                       onClick={addSubtask}
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add Subtask
-                    </Button>
-                  </div>
-                  
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {subtasks.map((subtask, index) => (
-                      <Card key={index} className="p-4 bg-gray-50 border-dashed">
-                        <div className="flex items-start gap-4">
-                          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Button 
+              type="submit"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold gap-2 shadow-lg hover:shadow-xl px-6 py-2 transition-all duration-300"
+              disabled={loading}
+            >
+              {loading ? (
+                <>Creating...</>
+              ) : (
+                <>
+                  {formData.isTaskGroup ? <Layers className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                  {formData.isTaskGroup ? `Create Task Group (${subtasks.filter(s => s.title.trim()).length} tasks)` : 'Create Task'}
+                </>
+              )}
+            </Button>     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div className="space-y-1">
                               <label className="text-xs font-medium text-gray-600">Subtask Title *</label>
                               <Input
@@ -576,6 +497,95 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
                 </div>
               )}
             </div>
+          </Card>   required
+                  >
+                    <SelectTrigger className="w-full transition-all duration-200 focus:ring-1 focus:ring-black border-gray-200 hover:border-gray-300">
+                      <SelectValue placeholder="Select Channel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="animation-fastfood">Animation Fastfood</SelectItem>
+                      <SelectItem value="epictoons">EpicToons</SelectItem>
+                      <SelectItem value="alpha-recap">Alpha Recap</SelectItem>
+                      <SelectItem value="super-recap">Super Recap</SelectItem>
+                      <SelectItem value="beta-recap">Beta Recap</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2 text-gray-700">
+                    <UploadCloud className="w-4 h-4" />
+                    Attachments
+                  </label>
+                  <div className="space-y-2">
+                    <Input
+                      type="file"
+                      multiple
+                      onChange={async (e) => {
+                        const files = Array.from(e.target.files || []);
+                        if (files.length === 0) return;
+
+                        // Upload files to media store and get their metadata
+                        const uploads = await uploadFiles(files, { name: 'Current User', uid: 'current-user' });
+                        
+                        // Add to local attachments (these will be references to uploaded media)
+                        const newAttachments = files.map((file) => ({
+                          original_filename: file.name,
+                          size: file.size,
+                          type: file.type
+                        }));
+                        
+                        setAttachments((prev) => [...prev, ...newAttachments]);
+                        e.target.value = ''; // Reset input
+                      }}
+                      accept="*/*"
+                      className="cursor-pointer"
+                    />
+                    {attachments.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-500 font-medium mb-2">Attached Files:</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {attachments.map((file, index) => (
+                            <div key={index} className="relative flex flex-col items-center p-2 bg-gray-50 rounded-md group hover:bg-gray-100 transition-colors">
+                              {getFileIcon(file)}
+                              <span className="text-xs text-gray-700 text-center truncate w-full mt-1">{file.original_filename}</span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setAttachments((prev) => prev.filter((_, i) => i !== index))
+                                }
+                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all text-xs"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="description" className="text-sm font-medium flex items-center gap-2 text-gray-700">
+                  <FileText className="w-4 h-4" />
+                  Description
+                </label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className="h-16 resize-none transition-all duration-200 focus:ring-1 focus:ring-black border-gray-200 hover:border-gray-300"
+                  placeholder="Enter task description"
+                  required
+                />
+              </div>
+            </div>
           </Card>
 
           <div className="flex justify-end space-x-4 mt-4 pt-4 border-t border-slate-200">
@@ -596,8 +606,8 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
                 <>Creating...</>
               ) : (
                 <>
-                  {formData.isTaskGroup ? <Layers className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                  {formData.isTaskGroup ? `Create Task Group (${subtasks.filter(s => s.title.trim()).length} tasks)` : 'Create Task'}
+                  <CheckCircle2 className="w-4 h-4" />
+                  Create Task
                 </>
               )}
             </Button>
@@ -607,3 +617,5 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
     </Dialog>
   );
 });
+
+
