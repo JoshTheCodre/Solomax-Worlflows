@@ -240,8 +240,8 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
         </DialogHeader>
 
         {/* Scrollable Content */}
-        <div className="max-h-[calc(95vh-140px)] overflow-y-auto">
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <div className="max-h-[calc(91vh-140px)] overflow-y-auto">
+          <form onSubmit={handleSubmit} className="p-4 space-y-6">
             
             {/* Task Type Selection */}
             <Card className="p-4 bg-gray-50/50 border border-gray-200">
@@ -276,7 +276,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
             </Card>
 
             {/* Main Task Information */}
-            <Card className="p-6 border border-gray-200 shadow-sm">
+            <Card className="p-4 border border-gray-200 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
                 <Target className="w-5 h-5 text-blue-600" />
                 <h3 className="text-lg font-semibold text-gray-800">
@@ -299,6 +299,32 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
                     required
                   />
                 </div>
+
+                   {/* Type - Only for single tasks */}
+                {!formData.isTaskGroup && (
+                  <div className="lg:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Briefcase className="w-4 h-4 inline mr-1" />
+                      Task Type *
+                    </label>
+                    <Select
+                      value={formData.type}
+                      onValueChange={(value) => setFormData({ ...formData, type: value })}
+                      required
+                    >
+                      <SelectTrigger className="h-11 border-gray-300 focus:border-blue-500">
+                        <SelectValue placeholder="Select task type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.values(TASK_TYPES).map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 {/* Assignee - Single for group tasks */}
                 <div>
@@ -397,31 +423,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
                   </Select>
                 </div>
 
-                {/* Type - Only for single tasks */}
-                {!formData.isTaskGroup && (
-                  <div className="lg:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <Briefcase className="w-4 h-4 inline mr-1" />
-                      Task Type *
-                    </label>
-                    <Select
-                      value={formData.type}
-                      onValueChange={(value) => setFormData({ ...formData, type: value })}
-                      required
-                    >
-                      <SelectTrigger className="h-11 border-gray-300 focus:border-blue-500">
-                        <SelectValue placeholder="Select task type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.values(TASK_TYPES).map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+        
 
                 {/* Description */}
                 <div className="lg:col-span-2">
@@ -443,7 +445,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
 
             {/* Subtasks Section - Only show if task group is enabled */}
             {formData.isTaskGroup && (
-              <Card className="p-6 border border-indigo-200 shadow-sm bg-indigo-50/30">
+              <Card className="p-2 border border-indigo-200 shadow-sm bg-indigo-50/30">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <Layers className="w-5 h-5 text-indigo-600" />
@@ -463,7 +465,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
                   </Button>
                 </div>
                 
-                <div className="space-y-4 max-h-80 overflow-y-auto">
+                <div className="space-y- max-h-80 overflow-y-auto">
                   {subtasks.map((subtask, index) => (
                     <Card key={index} className="p-4 bg-white border border-gray-200 shadow-sm">
                       <div className="flex items-start gap-4">
@@ -509,7 +511,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
                               onValueChange={(value) => updateSubtask(index, 'priority', value)}
                             >
                               <SelectTrigger className="h-9 text-sm border-gray-300 focus:border-indigo-500">
-                                <SelectValue placeholder={`Default (${formData.priority || 'Medium'})`} />
+                                <SelectValue placeholder={`(${formData.priority || 'Medium'})`} />
                               </SelectTrigger>
                               <SelectContent>
                                 {Object.values(TASK_PRIORITY).map((priority) => (
@@ -542,7 +544,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
             )}
 
             {/* Attachments Section */}
-            <Card className="p-6 border border-gray-200 shadow-sm">
+            <Card className="p-3 border border-gray-200 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
                 <UploadCloud className="w-5 h-5 text-blue-600" />
                 <h3 className="text-lg font-semibold text-gray-800">Attachments</h3>

@@ -466,7 +466,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
                 
                 <div className="space-y-2 max-h-80 overflow-y-auto">
                   {subtasks.map((subtask, index) => (
-                    <Card key={index} className="p-1 bg-white border border-gray-200 shadow-sm">
+                    <Card key={index} className="p- bg-white border border-gray-200 shadow-sm">
                       <div className="flex items-start gap-4">
                         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div className="md:col-span-1">
@@ -510,7 +510,7 @@ export const AddTaskModal = forwardRef(function AddTaskModal({ onSubmit, childre
                               onValueChange={(value) => updateSubtask(index, 'priority', value)}
                             >
                               <SelectTrigger className="h-9 text-sm border-gray-300 focus:border-indigo-500">
-                                <SelectValue placeholder={`(${formData.priority || 'Medium'})`} />
+                                <SelectValue placeholder={`Default (${formData.priority || 'Medium'})`} />
                               </SelectTrigger>
                               <SelectContent>
                                 {Object.values(TASK_PRIORITY).map((priority) => (
